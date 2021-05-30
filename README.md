@@ -151,7 +151,7 @@ done
 EOS
 ```
 
-You can use just point the script file or use redirection to source the script to run:
+Then you can point it to a file or use redirection to source the script to run, as you would usually do with bash:
 
 ```
 $ go run ./examples/getting-started test.gosh
