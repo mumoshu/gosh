@@ -13,15 +13,15 @@ import (
 func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
-	sh.Def("setup1", func(ctx gosh.Context, s []string) {
+	sh.Export("setup1", func(ctx gosh.Context, s []string) {
 		fmt.Fprintf(ctx.Stdout(), "running setup1\n")
 	})
 
-	sh.Def("setup2", func(ctx gosh.Context, s []string) {
+	sh.Export("setup2", func(ctx gosh.Context, s []string) {
 		ctx.Set("dir", s[0])
 	})
 
-	sh.Def("foo", func(ctx gosh.Context, s []string) {
+	sh.Export("foo", func(ctx gosh.Context, s []string) {
 		dir := ctx.Get("dir").(string)
 
 		fmt.Fprintf(ctx.Stdout(), "dir="+dir+"\n")
@@ -32,22 +32,22 @@ func New() *gosh.Shell {
 		// fmt.Fprintf(os.Stdout, strings.Join(s, " "))
 	}, Dep("setup1"), Dep("setup2", "aa"))
 
-	sh.Def("hello", func(sub string) {
+	sh.Export("hello", func(sub string) {
 		println("hello " + sub)
 	})
 
-	sh.Def("ctx1", func(ctx gosh.Context, num int, b bool, args []string) {
+	sh.Export("ctx1", func(ctx gosh.Context, num int, b bool, args []string) {
 		ctx.Stdout().Write([]byte(fmt.Sprintf("num=%v, b=%v, args=%v\n", num, b, args)))
 	})
 
-	sh.Def("ctx2", func(ctx gosh.Context, num int, b bool, args ...string) {
+	sh.Export("ctx2", func(ctx gosh.Context, num int, b bool, args ...string) {
 		ctx.Stdout().Write([]byte(fmt.Sprintf("num=%v, b=%v, args=%v\n", num, b, args)))
 
 		sh.Run(ctx, "hello", "world")
 		sh.Run(ctx, "ls", "-lah")
 	})
 
-	sh.Def("ctx3", func(ctx gosh.Context) error {
+	sh.Export("ctx3", func(ctx gosh.Context) error {
 		b, lsErr := sh.GoPipe(ctx, "ls", "-lah")
 
 		grepErr := sh.GoRun(b, "grep", "test")
@@ -83,11 +83,11 @@ func New() *gosh.Shell {
 		return fmt.Errorf("some error")
 	})
 
-	sh.Def("ctx4", func(ctx gosh.Context) error {
+	sh.Export("ctx4", func(ctx gosh.Context) error {
 		return sh.Run(ctx, Cmd("ls", "-lah"), Cmd("grep", "test"))
 	})
 
-	sh.Def("ctx5", func(ctx gosh.Context) error {
+	sh.Export("ctx5", func(ctx gosh.Context) error {
 		return sh.Run(ctx, Cmd("bash -c 'ls -lah | grep test'"))
 	})
 

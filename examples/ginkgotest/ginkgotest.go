@@ -5,7 +5,7 @@ import "github.com/mumoshu/gosh"
 func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
-	sh.Def("hello", func(ctx gosh.Context, target string) {
+	sh.Export("hello", func(ctx gosh.Context, target string) {
 		ctx.Stdout().Write([]byte("hello " + target + "\n"))
 	})
 

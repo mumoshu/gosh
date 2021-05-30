@@ -13,7 +13,7 @@ import (
 func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
-	sh.Def("gogrep", func(ctx gosh.Context, pattern string) {
+	sh.Export("gogrep", func(ctx gosh.Context, pattern string) {
 		scanner := bufio.NewScanner(ctx.Stdin())
 
 		for scanner.Scan() {
@@ -24,7 +24,7 @@ func New() *gosh.Shell {
 		}
 	})
 
-	sh.Def("gocat", func(ctx gosh.Context, file ...string) error {
+	sh.Export("gocat", func(ctx gosh.Context, file ...string) error {
 		var in io.Reader
 
 		if len(file) == 1 {

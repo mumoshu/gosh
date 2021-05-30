@@ -42,7 +42,7 @@ import (
 func main() {
 	sh := &gosh.Shell{}
 
-	sh.Def("hello", func(ctx gosh.Context, target string) {
+	sh.Export("hello", func(ctx gosh.Context, target string) {
 		ctx.Stdout().Write([]byte("hello " + target + "\n"))
 	})
 
@@ -171,7 +171,7 @@ Once the new interactive shell session gets started, you use it like a regular s
 The `getting-started` example contains a custom function written in Go, named `hello`, that prints `hello <FIRST ARG>` to the standard output.
 
 ```golang
-sh.Def("hello", func(ctx gosh.Context, target string) {
+sh.Export("hello", func(ctx gosh.Context, target string) {
     ctx.Stdout().Write([]byte("hello " + target + "\n"))
 })
 ```
@@ -193,7 +193,7 @@ $ code ./examples/getting-started/main.go
 ```
 
 ```golang
-sh.Def("hello", func(ctx gosh.Context, target string) {
+sh.Export("hello", func(ctx gosh.Context, target string) {
     ctx.Stdout().Write([]byte("konnichiwa " + target + "\n"))
 })
 ```
@@ -260,15 +260,15 @@ test:
 You can rewrite it by using some Go code powered by `gosh` that looks like the below:
 
 ```
-Def("all", Dep("build"), Dep("test"), func() {
+Export("all", Dep("build"), Dep("test"), func() {
 
 })
 
-Def("build", func() {
+Export("build", func() {
     Run("go", "build", "-o", "getting-started", "./examples/getting-started")
 })
 
-Def("test", func() {
+Export("test", func() {
     Run("go", "test", "./...")
 })
 ```
@@ -355,7 +355,7 @@ $ code ./examples/getting-started/main.go
 ```
 
 ```
-sh.Def("hello", func(ctx gosh.Context, target string) {
+sh.Export("hello", func(ctx gosh.Context, target string) {
     // Add the below Diagf call
     sh.Diagf("My own debug message someData=%s someNumber=%d", "foobar", 123)
 
@@ -493,7 +493,7 @@ package gotest
 func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
-	sh.Def("hello", func(ctx gosh.Context, target string) {
+	sh.Export("hello", func(ctx gosh.Context, target string) {
 		ctx.Stdout().Write([]byte("hello " + target + "\n"))
 	})
 

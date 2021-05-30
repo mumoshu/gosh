@@ -14,7 +14,7 @@ import (
 func TestFuncOK(t *testing.T) {
 	sh := &gosh.Shell{}
 
-	sh.Def("atoi", func(ctx gosh.Context, a string) (int, error) {
+	sh.Export("atoi", func(ctx gosh.Context, a string) (int, error) {
 		v, err := strconv.Atoi(a)
 		fmt.Fprintf(ctx.Stdout(), "%d\n", v)
 		return v, err

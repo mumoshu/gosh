@@ -11,21 +11,21 @@ import (
 // dsl
 var (
 	sh       = &Shell{}
-	Def      = sh.Def
+	Export   = sh.Export
 	Run      = sh.Run
 	MustExec = sh.MustExec
 )
 
 func main() {
-	Def("all", Dep("build"), Dep("test"), func() {
+	Export("all", Dep("build"), Dep("test"), func() {
 
 	})
 
-	Def("build", func() {
+	Export("build", func() {
 		Run("go", "build", "-o", "getting-started", "./examples/getting-started")
 	})
 
-	Def("test", func() {
+	Export("test", func() {
 		Run("go", "test", "./...")
 	})
 

@@ -95,7 +95,7 @@ func Foo(kubeconfig string) error {
 	return nil
 }
 
-func printCmdNameForFuncOrMethod(def func(...interface{}), up interface{}) {
+func printCmdNameForFuncOrMethod(export func(...interface{}), up interface{}) {
 	name1 := gosh.FuncOrMethodToCmdName(up)
 	println("funcname=", name1)
 }
@@ -119,34 +119,34 @@ func echoStrMapKV(k, v string) (map[string]string, error) {
 func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
-	var def = sh.Def
+	var export = sh.Export
 	var run = sh.Run
 	var echo = func(ctx gosh.Context, format string, args ...interface{}) {
 		fmt.Fprintf(ctx.Stdout(), format+"\n", args...)
 	}
 
-	// printCmdNameForFuncOrMethod(def, SetupTestBranch)
-	// printCmdNameForFuncOrMethod(def, RenderAndWriteFiles)
-	// printCmdNameForFuncOrMethod(def, sh.Run)
+	// printCmdNameForFuncOrMethod(export, SetupTestBranch)
+	// printCmdNameForFuncOrMethod(export, RenderAndWriteFiles)
+	// printCmdNameForFuncOrMethod(export, sh.Run)
 
-	def("hello", func(ctx gosh.Context, s string) {
+	export("hello", func(ctx gosh.Context, s string) {
 		fmt.Fprintf(ctx.Stdout(), "hello %s\n", s)
 		fmt.Fprintf(ctx.Stderr(), "hello %s (stderr)\n", s)
 	})
 
-	def("setup1", func(ctx gosh.Context, s []string) {
+	export("setup1", func(ctx gosh.Context, s []string) {
 		fmt.Fprintf(ctx.Stdout(), "running setup1\n")
 	})
 
-	def("setup2", func(ctx gosh.Context, s []string) {
+	export("setup2", func(ctx gosh.Context, s []string) {
 		ctx.Set("dir", s[0])
 	})
 
-	def(Setup3)
-	def(echoStr)
-	def(echoStrMap)
+	export(Setup3)
+	export(echoStr)
+	export(echoStrMap)
 
-	def("foo", Dep("setup1"), Dep("setup2", "bb"), func(ctx gosh.Context, s []string) {
+	export("foo", Dep("setup1"), Dep("setup2", "bb"), func(ctx gosh.Context, s []string) {
 		_ = run(ctx, "setup3", "aa")
 
 		var d string
@@ -167,19 +167,19 @@ func New() *gosh.Shell {
 		echo(ctx, strings.Join(s, " "))
 	})
 
-	def("tfup", func(ctx gosh.Context, dir string) {
+	export("tfup", func(ctx gosh.Context, dir string) {
 		run(ctx, "terraform", "apply", "-auto-approve")
 	})
 
-	def("tfdown", func(ctx gosh.Context, dir string) {
+	export("tfdown", func(ctx gosh.Context, dir string) {
 		run(ctx, "terraform", "destroy", "-auto-approve")
 	})
 
-	def("k8sup", func(ctx gosh.Context) {
+	export("k8sup", func(ctx gosh.Context) {
 		run(ctx, "helmfile", "apply")
 	})
 
-	def("all", func(ctx gosh.Context, dir string, b bool, i int) {
+	export("all", func(ctx gosh.Context, dir string, b bool, i int) {
 		ctx.Stdout().Write([]byte(fmt.Sprintf("dir=%v, b=%v, i=%v\n", dir, b, i)))
 
 		run(ctx, "tfup", dir)
@@ -188,7 +188,7 @@ func New() *gosh.Shell {
 		run(ctx, "k8sapply")
 	})
 
-	def("ctx3", func(ctx gosh.Context) error {
+	export("ctx3", func(ctx gosh.Context) error {
 		b, lsErr := sh.GoPipe(ctx, "ls", "-lah")
 
 		grepErr := sh.GoRun(b, "grep", "test")

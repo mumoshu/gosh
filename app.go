@@ -445,7 +445,7 @@ type Shell struct {
 	additionalCallerSkip int
 }
 
-func (t *Shell) Def(args ...interface{}) {
+func (t *Shell) Export(args ...interface{}) {
 	t.Lock()
 	defer t.Unlock()
 
