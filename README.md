@@ -15,6 +15,7 @@ You would usually use it to:
 Features:
 
 - [Interactive Shell with Hot Reloading](#interactive-shell-with-hot-reloading)
+- [Commands and Pipelines](#commands-and-pipelines)
 - [Use as a Build Tool](#use-as-a-build-tool)
 - [Diagnostic Logging](#diagnostic-logging)
 - [`go test` Integration](#go-test-integration)
@@ -201,6 +202,39 @@ Go back to your termiinal and rerun `hello world` to see the code hot-reloaded:
 ```
 gosh$ hello world
 konnichiwa world
+```
+
+## Commands and Pipelines
+
+`gosh` has a convenient helper functions to write command executions and shell pipelines in Go, as easy as you've been in a standard *nix shell like Bash.
+
+See the [commands](./examples/commands/commands.go) example for more information.
+
+In the example, we implement `gocat` and `gogrep` in Go, each is the simplest possible alternatives to standard `cat` and `grep`, respectively.
+
+Running the example takes you into a custom shell session as usual:
+
+```
+$ go run ./examples/commands/cmd
+```
+
+Create an example input file:
+
+```
+$ cat <<EOS > input.txt
+foo
+bar
+baz
+EOS
+```
+
+Now, let's try any of the following combinations of the standard and custom commands and see the output is consistent across runs, which means we've successfully reimplemented `cat` and `grep` in Go.
+
+```
+$ cat input.txt | grep bar
+$ gocat input.txt | grep bar
+$ cat input.txt | gogrep bar
+$ gocat input.txt | gogrep bar
 ```
 
 ## Use as a Build Tool
