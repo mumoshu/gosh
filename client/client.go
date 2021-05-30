@@ -23,15 +23,18 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"flag"
 	"io"
 	"log"
-	"math/rand"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/mumoshu/gosh/data"
-	pb "github.com/mumoshu/gosh/routeguide"
+	pb "github.com/mumoshu/gosh/remote"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )
@@ -43,86 +46,16 @@ var (
 	serverHostOverride = flag.String("server_host_override", "x.test.youtube.com", "The server name used to verify the hostname returned by the TLS handshake")
 )
 
-// printFeature gets the feature for the given point.
-func printFeature(client pb.RouteGuideClient, point *pb.Point) {
-	log.Printf("Getting feature for point (%d, %d)", point.Latitude, point.Longitude)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	feature, err := client.GetFeature(ctx, point)
-	if err != nil {
-		log.Fatalf("%v.GetFeatures(_) = _, %v: ", client, err)
-	}
-	log.Println(feature)
-}
-
-// printFeatures lists all the features within the given bounding Rectangle.
-func printFeatures(client pb.RouteGuideClient, rect *pb.Rectangle) {
-	log.Printf("Looking for features within %v", rect)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	stream, err := client.ListFeatures(ctx, rect)
-	if err != nil {
-		log.Fatalf("%v.ListFeatures(_) = _, %v", client, err)
-	}
-	for {
-		feature, err := stream.Recv()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			log.Fatalf("%v.ListFeatures(_) = _, %v", client, err)
-		}
-		log.Printf("Feature: name: %q, point:(%v, %v)", feature.GetName(),
-			feature.GetLocation().GetLatitude(), feature.GetLocation().GetLongitude())
-	}
-}
-
-// runRecordRoute sends a sequence of points to server and expects to get a RouteSummary from server.
-func runRecordRoute(client pb.RouteGuideClient) {
-	// Create a random number of random points
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	pointCount := int(r.Int31n(100)) + 2 // Traverse at least two points
-	var points []*pb.Point
-	for i := 0; i < pointCount; i++ {
-		points = append(points, randomPoint(r))
-	}
-	log.Printf("Traversing %d points.", len(points))
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	stream, err := client.RecordRoute(ctx)
-	if err != nil {
-		log.Fatalf("%v.RecordRoute(_) = _, %v", client, err)
-	}
-	for _, point := range points {
-		if err := stream.Send(point); err != nil {
-			log.Fatalf("%v.Send(%v) = %v", stream, point, err)
-		}
-	}
-	reply, err := stream.CloseAndRecv()
-	if err != nil {
-		log.Fatalf("%v.CloseAndRecv() got error %v, want %v", stream, err, nil)
-	}
-	log.Printf("Route summary: %v", reply)
-}
-
-// runRouteChat receives a sequence of route notes, while sending notes for various locations.
-func runRouteChat(client pb.RouteGuideClient) {
-	notes := []*pb.RouteNote{
-		{Location: &pb.Point{Latitude: 0, Longitude: 1}, Message: "First message"},
-		{Location: &pb.Point{Latitude: 0, Longitude: 2}, Message: "Second message"},
-		{Location: &pb.Point{Latitude: 0, Longitude: 3}, Message: "Third message"},
-		{Location: &pb.Point{Latitude: 0, Longitude: 1}, Message: "Fourth message"},
-		{Location: &pb.Point{Latitude: 0, Longitude: 2}, Message: "Fifth message"},
-		{Location: &pb.Point{Latitude: 0, Longitude: 3}, Message: "Sixth message"},
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+// runRemote receives a sequence of messages, while sending messages back to the client.
+func runRemote(client pb.RemoteClient) {
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	log.Printf("%v.RouteChat(_)", client)
+	log.Printf("%v.runRemote(_)", client)
 
-	stream, err := client.RouteChat(ctx)
+	stream, err := client.ShellSession(ctx)
 	if err != nil {
-		log.Fatalf("%v.RouteChat(_) = _, %v", client, err)
+		log.Fatalf("%v.runRemote(_) = _, %v", client, err)
 	}
 	waitc := make(chan struct{})
 	go func() {
@@ -130,7 +63,7 @@ func runRouteChat(client pb.RouteGuideClient) {
 			in, err := stream.Recv()
 			if err == io.EOF {
 				// read done.
-				log.Printf("Read done")
+				log.Printf("Recv done")
 				close(waitc)
 				return
 			}
@@ -140,19 +73,123 @@ func runRouteChat(client pb.RouteGuideClient) {
 			log.Printf("Got message %s", in.Message)
 		}
 	}()
-	for _, note := range notes {
-		if err := stream.Send(note); err != nil {
-			log.Fatalf("Failed to send a note: %v", err)
-		}
-	}
-	stream.CloseSend()
-	<-waitc
-}
 
-func randomPoint(r *rand.Rand) *pb.Point {
-	lat := (r.Int31n(180) - 90) * 1e7
-	long := (r.Int31n(360) - 180) * 1e7
-	return &pb.Point{Latitude: lat, Longitude: long}
+	reader := bufio.NewReader(os.Stdin)
+
+	readCh := make(chan string)
+	readErrCh := make(chan error)
+	var cancelled bool
+
+	go func() {
+		defer close(readCh)
+		defer close(readErrCh)
+
+	FOR:
+		for {
+			done := make(chan struct{})
+
+			var text string
+			var err error
+
+			go func() {
+				os.Stdin.SetReadDeadline(time.Now().Add(1 * time.Second))
+				text, err = reader.ReadString('\n')
+				close(done)
+			}()
+
+		READ:
+			for {
+				var quit bool
+
+				t := time.NewTimer(1 * time.Second)
+				select {
+				case <-ctx.Done():
+					log.Printf("Stopping read")
+					quit = true
+				case <-t.C:
+					log.Printf("Still waiting read")
+					continue
+				case <-done:
+					log.Printf("Read returned")
+				}
+
+				if !t.Stop() {
+					<-t.C
+				}
+
+				if quit {
+					break FOR
+				}
+
+				break READ
+			}
+
+			if err != nil {
+				if errors.Is(err, os.ErrDeadlineExceeded) {
+					if !cancelled {
+						log.Printf("continuing")
+						continue
+					}
+				}
+
+				readErrCh <- err
+				return
+			}
+			readCh <- text
+		}
+	}()
+
+	errCh := make(chan error)
+	func() {
+		defer close(errCh)
+
+	FOR:
+		for {
+			select {
+			case text, ok := <-readCh:
+				if text != "" {
+					text = strings.Replace(text, "\n", "", -1)
+					note := &pb.Message{Message: text}
+
+					if err := stream.Send(note); err != nil {
+						errCh <- err
+						break FOR
+					}
+				}
+
+				if !ok {
+					readCh = nil
+				}
+			case err, ok := <-readErrCh:
+				if err != nil {
+					errCh <- err
+					break FOR
+				}
+				if !ok {
+					readErrCh = nil
+				}
+			case <-waitc:
+				waitc = nil
+				break FOR
+			}
+		}
+	}()
+
+	log.Printf("Closing send")
+	stream.CloseSend()
+
+	cancelled = true
+
+	log.Printf("Cancelling")
+
+	cancel()
+
+	if err := <-errCh; err != nil {
+
+		log.Fatalf("Failed to send a note: %v", err)
+	}
+
+	log.Printf("Ending")
 }
 
 func main() {
@@ -177,23 +214,7 @@ func main() {
 		log.Fatalf("fail to dial: %v", err)
 	}
 	defer conn.Close()
-	client := pb.NewRouteGuideClient(conn)
+	client := pb.NewRemoteClient(conn)
 
-	// Looking for a valid feature
-	printFeature(client, &pb.Point{Latitude: 409146138, Longitude: -746188906})
-
-	// Feature missing.
-	printFeature(client, &pb.Point{Latitude: 0, Longitude: 0})
-
-	// Looking for features between 40, -75 and 42, -73.
-	printFeatures(client, &pb.Rectangle{
-		Lo: &pb.Point{Latitude: 400000000, Longitude: -750000000},
-		Hi: &pb.Point{Latitude: 420000000, Longitude: -730000000},
-	})
-
-	// RecordRoute
-	runRecordRoute(client)
-
-	// RouteChat
-	runRouteChat(client)
+	runRemote(client)
 }

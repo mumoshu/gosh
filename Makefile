@@ -1,5 +1,13 @@
-build: deps
-	PATH=$(PATH):.bin protoc -I hellogrpc/ hellogrpc/hellogrpc.proto --go_out=plugins=grpc:hellogrpc
+run-server: gen
+	go run ./server
+
+run-client: gen
+	go run ./client
+
+gen: deps
+	PATH=$(PATH):.bin protoc --go_out=. --go_opt=paths=source_relative \
+	--go-grpc_out=. --go-grpc_opt=paths=source_relative \
+	remote/remote.proto
 
 deps: protoc protoc-gen-go protoc-gen-go-gprc
 
