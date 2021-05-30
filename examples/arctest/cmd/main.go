@@ -12,5 +12,7 @@ func main() {
 	for _, a := range os.Args[1:] {
 		args = append(args, a)
 	}
-	log.Fatal(arctest.New().Run(args...))
+	if err := arctest.New().Run(args...); err != nil {
+		log.Fatal(err)
+	}
 }

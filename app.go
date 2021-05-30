@@ -63,7 +63,7 @@ func (c *App) handleFuncs(ctx Context, args []interface{}, outs []Output, called
 						return true
 					}
 
-					fmt.Fprintf(os.Stderr, "gosh.App.handleFuncs :::: cmd=%s, funID=%s\n", cmd, funID)
+					// fmt.Fprintf(os.Stderr, "gosh.App.handleFuncs :::: cmd=%s, funID=%s\n", cmd, funID)
 
 					retVals := c.funcs[cmd].Fun.Call(ctx, args[i+2:])
 
@@ -115,7 +115,7 @@ func (c *App) handleFuncs(ctx Context, args []interface{}, outs []Output, called
 			return true
 		}
 
-		fmt.Fprintf(os.Stderr, "gosh.App.handleFuncs: cmd=%s, funID=%s\n", fnName, funID)
+		// fmt.Fprintf(os.Stderr, "gosh.App.handleFuncs: cmd=%s, funID=%s\n", fnName, funID)
 
 		retVals := funWithOpts.Fun.Call(ctx, args[1:])
 
@@ -268,7 +268,7 @@ func (c *App) runInternal(ctx Context, interactive bool, args []string) (int, er
 
 	bashArgs = append(bashArgs, args...)
 
-	println(fmt.Sprintf("App.run: running %v: bashArgs %v (%d)", args, bashArgs, len(bashArgs)))
+	// println(fmt.Sprintf("App.run: running %v: bashArgs %v (%d)", args, bashArgs, len(bashArgs)))
 
 	cmd := exec.Command(c.BashPath, bashArgs...)
 	cmd.Env = append(os.Environ(), "BASH_ENV="+envfile)
@@ -282,7 +282,7 @@ func (c *App) runInternal(ctx Context, interactive bool, args []string) (int, er
 	go func() {
 		for sig := range signals {
 			if sig != syscall.SIGCHLD {
-				fmt.Fprintf(os.Stderr, "signal received: %v\n", sig)
+				// fmt.Fprintf(os.Stderr, "signal received: %v\n", sig)
 				err = cmd.Process.Signal(sig)
 				if err != nil {
 					errChan <- err

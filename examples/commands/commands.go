@@ -33,8 +33,10 @@ func New() *gosh.Shell {
 				return err
 			}
 			in = f
-		} else {
+		} else if len(file) == 0 {
 			in = ctx.Stdin()
+		} else {
+			return fmt.Errorf("unexpected length of args %d: %v", len(file), file)
 		}
 
 		scanner := bufio.NewScanner(in)

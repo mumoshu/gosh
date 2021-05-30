@@ -2,7 +2,6 @@ package gosh
 
 import (
 	"fmt"
-	"os"
 	"reflect"
 	"strconv"
 )
@@ -14,11 +13,11 @@ func Call(ctx Context, fun interface{}, funArgs ...interface{}) []reflect.Value 
 	numIn := x.NumIn()
 	// numOut := x.NumOut()
 
-	funcName := x.String()
+	// funcName := x.String()
 	isVariadic := x.IsVariadic()
-	pkgPath := x.PkgPath()
+	// pkgPath := x.PkgPath()
 
-	fmt.Fprintf(os.Stderr, "gosh.Call: funcName=%s, numIn=%d, isVariadic=%v, pkgPath=%s, funArgs=%v\n", funcName, numIn, isVariadic, pkgPath, funArgs)
+	// fmt.Fprintf(os.Stderr, "gosh.Call: funcName=%s, numIn=%d, isVariadic=%v, pkgPath=%s, funArgs=%v\n", funcName, numIn, isVariadic, pkgPath, funArgs)
 
 	args := make([]reflect.Value, numIn)
 
@@ -31,7 +30,7 @@ FOR:
 		var c Context = &context{}
 		reflectTypeContext := reflect.TypeOf(c)
 
-		fmt.Fprintf(os.Stderr, "i=%d, type=%v, kind=%v\n", i, inV, in_Kind)
+		// fmt.Fprintf(os.Stderr, "i=%d, type=%v, kind=%v\n", i, inV, in_Kind)
 
 		switch in_Kind {
 		case reflect.Interface:
@@ -109,7 +108,7 @@ FOR:
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "%v\n", args)
+	// fmt.Fprintf(os.Stderr, "%v\n", args)
 
 	// for o := 0; o < numOut; o++ {
 	// 	returnV := x.Out(0)

@@ -96,5 +96,7 @@ func New() *gosh.Shell {
 
 func main() {
 	println(fmt.Sprintf("starting abc=%v", os.Args))
-	log.Fatal(New().Run(os.Args[1:]))
+	if err := New().Run(os.Args[1:]); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -12,5 +12,7 @@ func main() {
 	for _, a := range os.Args[1:] {
 		args = append(args, a)
 	}
-	log.Fatal(commands.New().Run(args...))
+	if err := commands.New().Run(args...); err != nil {
+		log.Fatal(err)
+	}
 }
