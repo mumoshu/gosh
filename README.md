@@ -6,6 +6,7 @@
 
 You would usually use it to:
 
+- Use Go instead of Shell scripts
 - Build your project, as an alternative to `make`
 - Write Bash functions in Go
 - Build your own shell with custom functions written in Go
