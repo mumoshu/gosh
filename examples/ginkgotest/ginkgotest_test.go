@@ -6,6 +6,7 @@ import (
 
 	"github.com/mumoshu/gosh"
 	"github.com/mumoshu/gosh/examples/ginkgotest"
+	"github.com/mumoshu/gosh/goshtest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,7 +16,7 @@ var app *gosh.Shell
 func TestAcc(t *testing.T) {
 	app = ginkgotest.New()
 
-	app.In(t, func() {
+	goshtest.Run(t, app, func() {
 		RegisterFailHandler(Fail)
 		RunSpecs(t, "Your App's Suite")
 	})

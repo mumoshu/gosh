@@ -8,6 +8,7 @@ import (
 
 	"github.com/mumoshu/gosh"
 	"github.com/mumoshu/gosh/examples/gotest"
+	"github.com/mumoshu/gosh/goshtest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -34,7 +35,7 @@ func TestUnit(t *testing.T) {
 func TestIntegration(t *testing.T) {
 	sh := gotest.New()
 
-	sh.In(t, func() {
+	goshtest.Run(t, sh, func() {
 		fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 		var stdout bytes.Buffer
 

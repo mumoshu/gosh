@@ -8,10 +8,11 @@ import (
 	"testing"
 
 	"github.com/mumoshu/gosh"
+	"github.com/mumoshu/gosh/goshtest"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestFuncOK(t *testing.T) {
+func TestAtoi(t *testing.T) {
 	sh := &gosh.Shell{}
 
 	sh.Export("atoi", func(ctx gosh.Context, a string) (int, error) {
@@ -20,7 +21,7 @@ func TestFuncOK(t *testing.T) {
 		return v, err
 	})
 
-	sh.In(t, func() {
+	goshtest.Run(t, sh, func() {
 		t.Run("ok", func(t *testing.T) {
 			fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 			var stdout bytes.Buffer

@@ -6,6 +6,7 @@ import (
 
 	"github.com/mumoshu/gosh"
 	"github.com/mumoshu/gosh/examples/arctest"
+	"github.com/mumoshu/gosh/goshtest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -15,7 +16,7 @@ var arctestSh *gosh.Shell
 func TestAcc(t *testing.T) {
 	arctestSh = arctest.New()
 
-	arctestSh.In(t, func() {
+	goshtest.Run(t, arctestSh, func() {
 		RegisterFailHandler(Fail)
 		RunSpecs(t, "Books Suite")
 	})
