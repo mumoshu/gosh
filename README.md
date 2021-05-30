@@ -23,7 +23,7 @@ Features:
 `gosh` primarily targets `bash` but it can be easily enhanced to support other shells.
 Any contributions to add more shell supports are always welcomed.
 
-## Usage
+## Getting Started
 
 Get started by writing a Go application provides a shell that has a built-in `hello` function:
 
