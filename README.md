@@ -102,7 +102,7 @@ The custom functions and the shell environemnt can be used to not only accelerat
 
 You can `go run` your app to call a single custom function, or a shell script that invokes the custom function.
 
-Our [`getting-started` example](./run/examples/getting-started) defines a single custom function `hello` that takes only one argument to specify the part of the hello-world message printed by it.
+Our [`getting-started` example](./examples/getting-started) defines a single custom function `hello` that takes only one argument to specify the part of the hello-world message printed by it.
 
 So, `hello world` should print `hello world`.
 
@@ -111,14 +111,14 @@ To invoke it directly, just provide the command and the args via the command-lin
 With `go run`, you should write:
 
 ```
-$ go run ./run/examples/getting-started hello world
+$ go run ./examples/getting-started hello world
 hello world
 ```
 
 It can be executed the same way against a prebuilt binary:
 
 ```
-$ go build -o getting-started ./run/examples/getting-started
+$ go build -o getting-started ./examples/getting-started
 $ ./getting-started hello world
 hello world
 ```
@@ -128,7 +128,7 @@ It works exactly like a standard shell equipped with custom functions.
 As similar as you can provide shell scripts to `bash` via the standard input, you can do the same on your command:
 
 ```
-$ go run ./run/examples/getting-started <<EOS
+$ go run ./examples/getting-started <<EOS
 for ((i=0; i<3; i++)); do
 hello world
 done
@@ -152,8 +152,8 @@ EOS
 You can use just point the script file or use redirection to source the script to run:
 
 ```
-$ go run ./run/examples/getting-started test.gosh
-$ go run ./run/examples/getting-started <test.gosh
+$ go run ./examples/getting-started test.gosh
+$ go run ./examples/getting-started <test.gosh
 ```
 
 ## Interactive Shell with Hot Reloading
@@ -161,7 +161,7 @@ $ go run ./run/examples/getting-started <test.gosh
 You can `go run` your app without any arguments to start an interactive shell that hot reloads the custom functions automatically:
 
 ```
-$ go run ./run/examples/getting-started
+$ go run ./examples/getting-started
 ```
 
 Once the new interactive shell session gets started, you use it like a regular shell.
@@ -187,7 +187,7 @@ That is, you can modify the custom function code and just reinvoke `hello`, with
 For example, we modify the code so that the custom function prints it without another prefix `konnichiwa`:
 
 ```
-$ code ./run/examples/getting-started/main.go
+$ code ./examples/getting-started/main.go
 ```
 
 ```golang
@@ -216,7 +216,7 @@ Let's say you previously had a `Makefile` that looked like this:
 all: build test
 
 build:
-    go build -o getting-started ./run/examples/getting-started
+    go build -o getting-started ./examples/getting-started
 
 test:
     go test ./...
@@ -230,7 +230,7 @@ Def("all", Dep("build"), Dep("test"), func() {
 })
 
 Def("build", func() {
-    Run("go", "build", "-o", "getting-started", "./run/examples/getting-started")
+    Run("go", "build", "-o", "getting-started", "./examples/getting-started")
 })
 
 Def("test", func() {
@@ -305,7 +305,7 @@ try reading diagnostic logs that contains various debugging information from `go
 To access the diagnostic logs, use the file descriptor `3` to redirect it to an arbitrary destination:
 
 ```
-$ go run ./run/examples/getting-started hello world 3>diags.out
+$ go run ./examples/getting-started hello world 3>diags.out
 
 $ cat diags.out
 2021-05-29T05:59:38Z    app.go:466      registering func hello
@@ -316,7 +316,7 @@ You can also emit your own diagnostic logs from your custom functions, standard 
 If you want to write a diagnostic log message from a custom function written in Go, use the `gosh.Shell.Diagf` function:
 
 ```
-$ code ./run/examples/getting-started/main.go
+$ code ./examples/getting-started/main.go
 ```
 
 ```
@@ -329,7 +329,7 @@ sh.Def("hello", func(ctx gosh.Context, target string) {
 ```
 
 ```
-$ go run ./run/examples/getting-started hello world 3>diags.out
+$ go run ./examples/getting-started hello world 3>diags.out
 
 $ cat diags.out 
 2021-05-29T06:03:58Z    app.go:466      registering func hello
@@ -339,7 +339,7 @@ $ cat diags.out
 It also works with a script, without any surprise:
 
 ```
-$ go run ./run/examples/getting-started <<EOS 3>diags.out
+$ go run ./examples/getting-started <<EOS 3>diags.out
 hello world
 hello world
 EOS
@@ -366,7 +366,7 @@ echo my own debug message >&3
 To test, you can e.g. Bash [`Here Strings`](https://www.gnu.org/software/bash/manual/html_node/Redirections.html#Here-Strings):
 
 ```
-$ go run ./run/examples/getting-started <<EOS 3>diags.out
+$ go run ./examples/getting-started <<EOS 3>diags.out
 echo my own debug message >&3
 EOS
 
@@ -379,7 +379,7 @@ my own debug message
 For a bash function, it is as easy as...:
 
 ```
-$ go run ./run/examples/getting-started <<EOS 3>diags.out
+$ go run ./examples/getting-started <<EOS 3>diags.out
 myfunc() {
   echo my own debug message from myfunc >&3
 }

@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/mumoshu/gosh"
-	"github.com/mumoshu/gosh/run/examples/gotest"
+	"github.com/mumoshu/gosh/examples/gotest"
 	"github.com/stretchr/testify/assert"
 )
 

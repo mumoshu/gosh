@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/mumoshu/gosh/run/examples/ginkgotest"
+	"github.com/mumoshu/gosh/examples/ginkgotest"
 )
 
 func main() {

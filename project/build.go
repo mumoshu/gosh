@@ -22,7 +22,7 @@ func main() {
 	})
 
 	Def("build", func() {
-		Run("go", "build", "-o", "getting-started", "./run/examples/getting-started")
+		Run("go", "build", "-o", "getting-started", "./examples/getting-started")
 	})
 
 	Def("test", func() {

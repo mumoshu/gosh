@@ -4,7 +4,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/mumoshu/gosh/run/examples/arctest"
+	"github.com/mumoshu/gosh/examples/arctest"
 )
 
 func main() {

@@ -1,27 +1,27 @@
-package ginkgotest_test
+package arctest_test
 
 import (
 	"bytes"
 	"testing"
 
 	"github.com/mumoshu/gosh"
-	"github.com/mumoshu/gosh/run/examples/ginkgotest"
+	"github.com/mumoshu/gosh/examples/arctest"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
 
-var app *gosh.Shell
+var arctestSh *gosh.Shell
 
 func TestAcc(t *testing.T) {
-	app = ginkgotest.New()
+	arctestSh = arctest.New()
 
-	app.In(t, func() {
+	arctestSh.In(t, func() {
 		RegisterFailHandler(Fail)
-		RunSpecs(t, "Your App's Suite")
+		RunSpecs(t, "Books Suite")
 	})
 }
 
-var _ = Describe("Your App", func() {
+var _ = Describe("arctest", func() {
 	var (
 		config struct {
 			cmd  string
@@ -30,25 +30,27 @@ var _ = Describe("Your App", func() {
 
 		err    error
 		stdout string
+		stderr string
 	)
 
 	JustBeforeEach(func() {
 		// This doesn't work as then we have no way to "hook" into the test framework
 		// for handling indirectly run commands.
 		//
-		// sh := ginkgotest.New()
+		// sh := arctest.New()
 
-		var stdoutBuf bytes.Buffer
+		var stdoutBuf, stderrBuf bytes.Buffer
 
 		var args []interface{}
 
 		args = append(args, config.cmd)
 		args = append(args, config.args...)
-		args = append(args, gosh.WriteStdout(&stdoutBuf))
+		args = append(args, gosh.WriteStdout(&stdoutBuf), gosh.WriteStderr(&stderrBuf))
 
-		err = app.Run(args...)
+		err = arctestSh.Run(args...)
 
 		stdout = stdoutBuf.String()
+		stderr = stderrBuf.String()
 	})
 
 	Describe("hello", func() {
@@ -65,6 +67,10 @@ var _ = Describe("Your App", func() {
 				Expect(stdout).To(Equal("hello world\n"))
 			})
 
+			It("should write \"hello world (stderr)\" to stderr", func() {
+				Expect(stderr).To(Equal("hello world (stderr)\n"))
+			})
+
 			It("should not error", func() {
 				Expect(err).ToNot(HaveOccurred())
 			})
@@ -77,6 +83,10 @@ var _ = Describe("Your App", func() {
 
 			It("should output \"hello sekai\"", func() {
 				Expect(stdout).To(Equal("hello sekai\n"))
+			})
+
+			It("should write \"hello sekai (stderr)\" to stderr", func() {
+				Expect(stderr).To(Equal("hello sekai (stderr)\n"))
 			})
 
 			It("should not error", func() {

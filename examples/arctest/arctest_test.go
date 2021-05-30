@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github.com/mumoshu/gosh"
-	"github.com/mumoshu/gosh/run/examples/arctest"
+	"github.com/mumoshu/gosh/examples/arctest"
 	"github.com/stretchr/testify/assert"
 )
 
