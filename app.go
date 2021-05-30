@@ -65,7 +65,11 @@ func (c *App) handleFuncs(ctx Context, args []interface{}, outs []Output, called
 
 					// fmt.Fprintf(os.Stderr, "gosh.App.handleFuncs :::: cmd=%s, funID=%s\n", cmd, funID)
 
-					retVals := c.funcs[cmd].Fun.Call(ctx, args[i+2:])
+					retVals, err := c.funcs[cmd].Fun.Call(ctx, args[i+2:])
+					if err != nil {
+						ctx.Err(err.Error())
+						return true
+					}
 
 					if len(outs) > len(retVals) {
 						ctx.Err(fmt.Sprintf("%s: missing outputs: expected %d, got %d return values", cmd, len(outs), len(retVals)))
@@ -117,7 +121,11 @@ func (c *App) handleFuncs(ctx Context, args []interface{}, outs []Output, called
 
 		// fmt.Fprintf(os.Stderr, "gosh.App.handleFuncs: cmd=%s, funID=%s\n", fnName, funID)
 
-		retVals := funWithOpts.Fun.Call(ctx, args[1:])
+		retVals, err := funWithOpts.Fun.Call(ctx, args[1:])
+		if err != nil {
+			ctx.Err(err.Error())
+			return true
+		}
 
 		if len(outs) > len(retVals) {
 			ctx.Err(fmt.Sprintf("%s: missing outputs: expected %d, got %d return values", args[0], len(outs), len(retVals)))
@@ -387,7 +395,7 @@ type Fun struct {
 	F interface{}
 }
 
-func (fn Fun) Call(ctx Context, args []interface{}) []reflect.Value {
+func (fn Fun) Call(ctx Context, args []interface{}) ([]reflect.Value, error) {
 	// switch f := fn.F.(type) {
 	// case func(Context, []string):
 	// 	f(ctx, args)

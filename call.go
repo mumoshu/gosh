@@ -6,7 +6,7 @@ import (
 	"strconv"
 )
 
-func Call(ctx Context, fun interface{}, funArgs ...interface{}) []reflect.Value {
+func Call(ctx Context, fun interface{}, funArgs ...interface{}) ([]reflect.Value, error) {
 	fv := reflect.ValueOf(fun)
 	x := reflect.TypeOf(fun)
 
@@ -116,5 +116,16 @@ FOR:
 	// 	fmt.Printf("\nParameter OUT: "+strconv.Itoa(o)+"\nKind: %v\nName: %v\n", return_Kind, returnV.Name())
 	// }
 
-	return fv.Call(args)
+	values := fv.Call(args)
+
+	if len(values) > 0 {
+		last := values[len(values)-1]
+
+		err, ok := last.Interface().(error)
+		if ok {
+			return values, err
+		}
+	}
+
+	return values, nil
 }
