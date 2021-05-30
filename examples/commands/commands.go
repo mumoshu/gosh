@@ -3,6 +3,7 @@ package commands
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
@@ -23,13 +24,20 @@ func New() *gosh.Shell {
 		}
 	})
 
-	sh.Def("gocat", func(ctx gosh.Context, file string) error {
-		f, err := os.Open(file)
-		if err != nil {
-			return err
+	sh.Def("gocat", func(ctx gosh.Context, file ...string) error {
+		var in io.Reader
+
+		if len(file) == 1 {
+			f, err := os.Open(file[0])
+			if err != nil {
+				return err
+			}
+			in = f
+		} else {
+			in = ctx.Stdin()
 		}
 
-		scanner := bufio.NewScanner(f)
+		scanner := bufio.NewScanner(in)
 
 		for scanner.Scan() {
 			line := scanner.Text()
