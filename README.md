@@ -520,7 +520,7 @@ var app *gosh.Shell
 func TestAcc(t *testing.T) {
 	app = ginkgotest.New()
 
-	app.In(t, func() {
+	goshtest.Run(t, app, func() {
 		RegisterFailHandler(Fail)
 		RunSpecs(t, "Your App's Suite")
 	})
