@@ -6,10 +6,58 @@ import (
 	"strconv"
 )
 
-func Call(ctx Context, fun interface{}, funArgs ...interface{}) ([]reflect.Value, error) {
+func CallFunc(ctx Context, fun interface{}, funArgs ...interface{}) ([]reflect.Value, error) {
 	fv := reflect.ValueOf(fun)
 	x := reflect.TypeOf(fun)
 
+	args, err := getArgs(ctx, x, funArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	// fmt.Fprintf(os.Stderr, "%v\n", args)
+
+	// for o := 0; o < numOut; o++ {
+	// 	returnV := x.Out(0)
+	// 	return_Kind := returnV.Kind()
+	// 	fmt.Printf("\nParameter OUT: "+strconv.Itoa(o)+"\nKind: %v\nName: %v\n", return_Kind, returnV.Name())
+	// }
+
+	values := fv.Call(args)
+
+	if len(values) > 0 {
+		last := values[len(values)-1]
+
+		err, ok := last.Interface().(error)
+		if ok {
+			return values, err
+		}
+	}
+
+	return values, nil
+}
+
+func CallMethod(ctx Context, m reflect.Value, funArgs ...interface{}) ([]reflect.Value, error) {
+	args, err := getArgs(ctx, m.Type(), funArgs)
+	if err != nil {
+		return nil, err
+	}
+
+	values := m.Call(args)
+
+	if len(values) > 0 {
+		last := values[len(values)-1]
+
+		err, ok := last.Interface().(error)
+		if ok {
+			return values, err
+		}
+	}
+
+	return values, nil
+}
+
+func getArgs(ctx Context, x reflect.Type, funArgs []interface{}) ([]reflect.Value, error) {
 	numIn := x.NumIn()
 	// numOut := x.NumOut()
 
@@ -108,24 +156,5 @@ FOR:
 		}
 	}
 
-	// fmt.Fprintf(os.Stderr, "%v\n", args)
-
-	// for o := 0; o < numOut; o++ {
-	// 	returnV := x.Out(0)
-	// 	return_Kind := returnV.Kind()
-	// 	fmt.Printf("\nParameter OUT: "+strconv.Itoa(o)+"\nKind: %v\nName: %v\n", return_Kind, returnV.Name())
-	// }
-
-	values := fv.Call(args)
-
-	if len(values) > 0 {
-		last := values[len(values)-1]
-
-		err, ok := last.Interface().(error)
-		if ok {
-			return values, err
-		}
-	}
-
-	return values, nil
+	return args, nil
 }

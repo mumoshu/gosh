@@ -392,6 +392,7 @@ type Dependency struct {
 
 type Fun struct {
 	F interface{}
+	M *reflect.Value
 }
 
 func (fn Fun) Call(ctx Context, args []interface{}) ([]reflect.Value, error) {
@@ -401,7 +402,12 @@ func (fn Fun) Call(ctx Context, args []interface{}) ([]reflect.Value, error) {
 
 	// 	return nil
 	// default:
-	return Call(ctx, fn.F, args...)
+
+	if fn.M != nil {
+		return CallMethod(ctx, *fn.M, args...)
+	}
+
+	return CallFunc(ctx, fn.F, args...)
 	// }
 }
 
@@ -463,6 +469,16 @@ func (t *Shell) Export(args ...interface{}) {
 		aType := reflect.TypeOf(a)
 		if aType.AssignableTo(funOptionType) {
 			opts = append(opts, a.(FunOption))
+		} else if aType.NumMethod() > 0 {
+			v := reflect.ValueOf(a)
+			for i := 0; i < aType.NumMethod(); i++ {
+				typeM := aType.Method(i)
+				name := typeM.Name
+				m := v.Method(i)
+				t.export(strings.ToLower(name), nil, &m, opts)
+			}
+		} else if aType.Kind() == reflect.Struct || aType.Kind() == reflect.Ptr {
+			panic("struct must have one or more public functions to exported")
 		} else {
 			if i == 0 {
 				s, ok := a.(string)
@@ -484,6 +500,12 @@ func (t *Shell) Export(args ...interface{}) {
 		}
 	}
 
+	if fn != nil {
+		t.export(name, fn, nil, opts)
+	}
+}
+
+func (t *Shell) export(name string, fn interface{}, m *reflect.Value, opts []FunOption) {
 	var funOpts FunOptions
 
 	for _, o := range opts {
@@ -492,7 +514,13 @@ func (t *Shell) Export(args ...interface{}) {
 
 	t.Diagf("registering func %s", name)
 
-	t.funcs[name] = FunWithOpts{Fun: Fun{fn}, Opts: funOpts}
+	if m != nil {
+		t.funcs[name] = FunWithOpts{Fun: Fun{M: m}, Opts: funOpts}
+	} else if fn != nil {
+		t.funcs[name] = FunWithOpts{Fun: Fun{F: fn}, Opts: funOpts}
+	} else {
+		panic(fmt.Errorf("unexpected args passed to export %s: fn=%v, m=%v, opts=%v", name, fn, m, opts))
+	}
 }
 
 func (t *Shell) Diagf(format string, args ...interface{}) {
