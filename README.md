@@ -395,7 +395,7 @@ my own debug message from myfunc
 
 ## `go test` Integration
 
-See the [gotest example](run/examples/gotest/gotest_test.go) for how to write unit and integration tests against your `gosh` applications, shell scripts, or even a regular command that isn't implemented using `gosh`.
+See the [gotest example](./examples/gotest/gotest_test.go) for how to write unit and integration tests against your `gosh` applications, shell scripts, or even a regular command that isn't implemented using `gosh`.
 
 The below is the most standard structure of an unit test for your `gosh` application:
 
@@ -475,7 +475,7 @@ If you find yourself repeating a lot of "test setup" code in your tests or have 
 > Ginkgo is a Go testing framework built to help you efficiently write expressive and comprehensive tests using Behavior-Driven Development (“BDD”) style
 > https://onsi.github.io/ginkgo/
 
-See the [ginkgotest example](run/examples/ginkgotest/ginkgotest_test.go) for how to write integration and End-to-End tests against your `gosh` applications, shell scripts, or even a regular command that isn't implemented using `gosh`.
+See the [ginkgotest example](./examples/ginkgotest/ginkgotest_test.go) for how to write integration and End-to-End tests against your `gosh` applications, shell scripts, or even a regular command that isn't implemented using `gosh`.
 
 The below is the most standard structure of an Ginkgo test for your `gosh` application:
 
