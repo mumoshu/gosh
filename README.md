@@ -110,7 +110,7 @@ So, `hello world` should print `hello world`.
 
 To invoke it directly, just provide the command and the args via the command-line.
 
-With `go run`, you should write:
+With `go run`, that can be done by:
 
 ```
 $ go run ./examples/getting-started hello world
