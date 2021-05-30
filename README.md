@@ -25,11 +25,52 @@ Any contributions to add more shell supports are always welcomed.
 
 ## Usage
 
-You can even create a single executable that provides a `bash` enviroment that provides custom functions written in Go.
+Get started by writing a Go application provides a shell that has a built-in `hello` function:
+
+```
+$ mkdir ./myapp; cat <<EOS > ./myapp/main.go
+package main
+
+import (
+	"os"
+
+	"github.com/mumoshu/gosh"
+)
+
+func main() {
+	sh := &gosh.Shell{}
+
+	sh.Def("hello", func(ctx gosh.Context, target string) {
+		// sh.Diagf("My own debug message someData=%s someNumber=%d", "foobar", 123)
+
+		ctx.Stdout().Write([]byte("hello " + target + "\n"))
+	})
+
+	sh.MustExec(os.Args)
+}
+EOS
+```
+
+Go-running it takes you into a shell session that has the builtin function:
+
+```
+$ go run ./myapp
+
+bash$ hello world
+hello world
+```
+
+This shell session rebuilds your command automatically so that you can test the modified version of `hello` function without restarting the session.
+
+Once you're confident with what you built, you'd want to distribute it.
+
+Just use a standard `go build` command to create a single executable that provides a `bash` enviroment that provides custom functions:
 
 ```
 $ go build -o myapp ./myapp
 ```
+
+You can directly invoke the custom function by providing the command name and arguments like:
 
 ```
 $ myapp hello world
@@ -38,6 +79,8 @@ $ myapp hello world
 ```
 hello world!
 ```
+
+As it's a bash in the end, you can run a shell script, with access to the `hello` function written in Go:
 
 ```
 $ myapp <<EOS
@@ -52,6 +95,8 @@ hello world!
 hello world!
 hello world!
 ```
+
+The custom functions and the shell environemnt can be used to not only accelerating your application, but also to mock your commands for testing. The possibilities are endless. If you're curious, read on.
 
 # Features
 
