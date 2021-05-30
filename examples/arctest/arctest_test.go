@@ -9,6 +9,7 @@ import (
 
 	"github.com/mumoshu/gosh"
 	"github.com/mumoshu/gosh/examples/arctest"
+	"github.com/mumoshu/gosh/goshtest"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -23,7 +24,7 @@ func TestArctest(t *testing.T) {
 func TestBashEnv(t *testing.T) {
 	sh := arctest.New()
 
-	sh.In(t, func() {
+	goshtest.Run(t, sh, func() {
 		fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 		var stdout, stderr bytes.Buffer
 

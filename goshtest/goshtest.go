@@ -65,5 +65,7 @@ func Run(testCtx *testing.T, t *gosh.Shell, f func()) {
 		return
 	}
 
+	os.Setenv(TestEnvName, "foobar")
+
 	f()
 }
