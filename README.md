@@ -456,7 +456,7 @@ If you are curious how you would implement `gotest.New`, read on.
 
 A recommended approach to structure your `gosh` application is to put everything except the entrypoint to your application to a dedicated package.
 
-In the `gotest example`, we have two packages:
+In the `gotest` example, we have two packages:
 
 - `gotest/cmd` that contains the `main` package
 - `gotest` for everything else
@@ -465,7 +465,7 @@ The only source file that exists in the first package is `gotest/cmd/main.go`.
 
 Basically, It contains only a call to the second package:
 
-```
+```go
 package main
 
 func main() {
@@ -477,7 +477,7 @@ The `gotest.MustExec` call refers to the `MustExec` function defined in the seco
 
 It looks like:
 
-```
+```go
 package gotest
 
 func MustExec(osArgs []string) {
@@ -487,7 +487,7 @@ func MustExec(osArgs []string) {
 
 `New` is the function that initializes the instance of your `gosh` application:
 
-```
+```go
 package gotest
 
 func New() *gosh.Shell {
@@ -502,6 +502,22 @@ func New() *gosh.Shell {
 ```
 
 This way, you can just call `New` to create an instance of your gosh application for testing, and then call `Run` on the application in the test, as you would do while writing the application itself.
+
+```go
+package gotest_test
+
+func TestUnit(t *testing.T) {
+	gotest := gotest.New()
+
+	var stdout bytes.Buffer
+
+	if err := gotest.Run("hello", "world", gosh.WriteStdout(&stdout)); err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, "hello world\n", stdout.String())
+}
+```
 
 ## Ginkgo Integration
 
