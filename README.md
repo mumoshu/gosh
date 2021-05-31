@@ -6,7 +6,7 @@
 
 You would usually use it to:
 
-- Use Go instead of Shell scripts
+- Write Go instead of Shell scripts
 - Build your project, as an alternative to `make`
 - Write Bash functions in Go
 - Build your own shell with custom functions written in Go
@@ -272,6 +272,10 @@ Export("test", func() {
     Run("go", "test", "./...")
 })
 ```
+
+`Dep` is a function provided by `gosh` to let it run the said command before running the exported function itself.
+
+So, in the above example, running `all` triggers runs of `build` and `test` beforehand.
 
 Instead of `make all`, `make build`, and `make test` you used to run, you can now run respective `go run` commands:
 
