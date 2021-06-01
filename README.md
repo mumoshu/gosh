@@ -341,7 +341,11 @@ project
 
 `gosh` has a rich set of functionalities to make writing a Go function a.k.a custom shell function a breeze.
 
-One of such features is automatic flags, as shown in ouor [flags example](./flags_test.go).
+- [Automatic Flags](#automatic-flags)
+
+### Automatic Flags
+
+One of such features is automatic flags, as shown in our [flags example](./flags_test.go).
 
 The gist of the feature is that you can write a standard function that accepts all the optional parameters as a Go struct, like:
 
