@@ -18,6 +18,7 @@ Features:
 - [Interactive Shell with Hot Reloading](#interactive-shell-with-hot-reloading)
 - [Commands and Pipelines](#commands-and-pipelines)
 - [Use as a Build Tool](#use-as-a-build-tool)
+- [Go interoperability](#go-interoperability) 
 - [Diagnostic Logging](#diagnostic-logging)
 - [`go test` Integration](#go-test-integration)
 - [Ginkgo Integration](#ginkgo-integration)
@@ -335,6 +336,72 @@ alias project='GOSH_BUILD_TAG=project go run -tags=project ./project'
 
 project
 ```
+
+## Go interoperability
+
+`gosh` has a rich set of functionalities to make writing a Go function a.k.a custom shell function a breeze.
+
+One of such features is automatic flags, as shown in ouor [flags example](./flags_test.go).
+
+The gist of the feature is that you can write a standard function that accepts all the optional parameters as a Go struct, like:
+
+```
+type Opts struct {
+	UpperCase bool `flag:"upper-case"`
+}
+
+func Hello(ctx gosh.Context, a string, opts Opts) {
+	a = "hello " + a
+	if opts.UpperCase {
+		a = strings.ToUpper(a)
+	}
+	fmt.Fprintf(ctx.Stdout(), "%s\n", a)
+}
+```
+
+As this is a standard Go function, you can write some Go to call it like:
+
+```
+Hello(ctx, "world", Opts{UpperCase: true})
+//=> HELLO WORLD
+```
+
+Now, you'd export this to the `gosh`-powered shell by using `Export` as usual:
+
+```
+sh.Export(Hello)
+```
+
+This makes it available to the custom shell from both the Go side and the shell side.
+That is, you can call it from Go using `Run`:
+
+```
+sh.Run("hello", "world", Opts{UppserCase: true})
+```
+
+while you can call it from shell using the automatically defined flags:
+
+```
+hello world -upper-case=true
+```
+
+For compatibility reason, you can actually use a more shell-like syntax when you call it from Go:
+
+```
+sh.Run("hello", "world", "-upper-case=true")
+```
+
+This magic is driven by you define a struct tag. In the original example, you've seen in the struct:
+
+```
+UpperCase bool `flag:"upper-case"`
+```
+
+This reads as `the struct field "UpperCase" has a tag named "flag" whose value is set to "upper-case"`.
+
+`gosh` reads the field along with its tag to use it when you provided some flag-like strings in a function argument where the function parameter expected a struct value.
+
+This way, you don't need to write a length switch-case or call many Go's `flag` functions or deal with `FlagSet` yourself. `gosh` does it all for you.
 
 ## Diagnostic Logging
 

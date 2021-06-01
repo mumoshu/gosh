@@ -151,8 +151,27 @@ FOR:
 			break FOR
 		case reflect.Map:
 			args[i] = reflect.ValueOf(funArgs[j])
+		case reflect.Struct:
+			f := &structFieldsReflector{
+				TagToEnvName:    defaultFilter,
+				TagToUsage:      defaultFilter,
+				FieldToFlagName: defaultFilter,
+			}
+
+			// This returns a pointer to the value of the type i.e. new(foo), &foo{}, instead of foo{}.
+			v := reflect.New(inV)
+
+			if err := f.SetStruct("call", v, funArgs[j:]); err != nil {
+				return nil, fmt.Errorf("call: %v", err)
+			}
+
+			// And that's why you need to take the Elem, which is the underlying value the pointer points.
+			// Otherwise you get errors like `Call using *gosh_test.Opts as type gosh_test.Opts`
+			args[i] = v.Elem()
+
+			break FOR
 		default:
-			panic(fmt.Sprintf("unexpected kind for %v: %v", inV.Name(), in_Kind))
+			panic(fmt.Sprintf("call: unexpected kind for %v: %v", inV.Name(), in_Kind))
 		}
 	}
 
