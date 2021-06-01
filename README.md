@@ -18,7 +18,8 @@ Features:
 - [Interactive Shell with Hot Reloading](#interactive-shell-with-hot-reloading)
 - [Commands and Pipelines](#commands-and-pipelines)
 - [Use as a Build Tool](#use-as-a-build-tool)
-- [Go interoperability](#go-interoperability) 
+- [Go interoperability](#go-interoperability)
+  - [Automatic Arguments](#automatic-arguments), [Automatic Flags](#automatic-flags)
 - [Diagnostic Logging](#diagnostic-logging)
 - [`go test` Integration](#go-test-integration)
 - [Ginkgo Integration](#ginkgo-integration)
@@ -341,11 +342,43 @@ project
 
 `gosh` has a rich set of functionalities to make writing a Go function a.k.a custom shell function a breeze.
 
+- [Automatic Arguments](#automatic-arguments)
 - [Automatic Flags](#automatic-flags)
+
+### Automatic Arguments
+
+This feature makes it easy to define positional arguments to your custom function. See your [args example](./args_test.go).
+
+To begin with, let me revisit what we've defined in our early example- a single function that takes only one string parameter `target`:
+
+```
+sh.Export("hello", func(ctx gosh.Context, target string) {
+    ctx.Stdout().Write([]byte("hello " + target + "\n"))
+})
+```
+
+Although a shell function's argument should be a string in general, this doesn't mean you need to manually parse it into a more useful type that aligns with your goal.
+
+Just use other supported types in the parameters as listed below. `gosh` automatically parses the argument to the type you've specified.
+
+- `int`
+- `bool`
+- `string`
+- `[]string`
+- `...string`
+- struct ([Automatic Flags](#automatic-flags))
+
+`[]string`, `...string`, and struct can be only positined last.
+
+`[]string` and `...string` is automatically captures all the remaining arguments from the index of the parameter.
+
+That is, both `func Join(delim string, elems []string)` and `func Join(delim string, elems []string)` converts a `join , foo bar` call into `Join(",", []string{"foo", "bar"})` and `Join(",", "foo", "bar")` respectively.
+
+A struct doesn't usually map one-to-one to a string. So we treat it as a set of options that can be constructed from a list of zero or more flags. Please refer to [Automatic Flags](#automatic-flags) for more information about how flags are converted to a struct.
 
 ### Automatic Flags
 
-One of such features is automatic flags, as shown in our [flags example](./flags_test.go).
+This feature makes it easy to define flags like `-foo=bar` for your custom function. See our [flags example](./flags_test.go).
 
 The gist of the feature is that you can write a standard function that accepts all the optional parameters as a Go struct, like:
 
