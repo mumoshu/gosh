@@ -2,9 +2,12 @@
 
 `gosh` is a framework for operating and extending Linux shells with Go.
 
-`gosh` makes it extremely easy to gradually rewrite your complex shell script into a more maintainable equivalent.
+The author started developing `gosh` to:
 
-You would usually use it to:
+- Make it extremely easy to gradually rewrite your complex shell script into a more maintainable equivalent - A Go application
+- Make it extremely easy to write a maintainable End-to-End test involves many shell commands and takes an hour or so to run
+
+But you can also use it for the following use-cases:
 
 - Write Go instead of Shell scripts
 - Build your project, as an alternative to `make`
@@ -13,7 +16,7 @@ You would usually use it to:
 - Incrementally refactor your Bash scripts with Go
 - Test your Bash scripts, as a dependency injection system and a test framework/runner
 
-Features:
+For more information, see the respective guides below:
 
 - [Interactive Shell with Hot Reloading](#interactive-shell-with-hot-reloading)
 - [Commands and Pipelines](#commands-and-pipelines)
@@ -23,8 +26,9 @@ Features:
 - [Diagnostic Logging](#diagnostic-logging)
 - [`go test` Integration](#go-test-integration)
 - [Ginkgo Integration](#ginkgo-integration)
+- [Writing End-to-End test](#writing-end-to-end-test)
 
-`gosh` primarily targets `bash` but it can be easily enhanced to support other shells.
+Note that `gosh` primarily targets `bash` today. But it can be easily enhanced to support other shells, too.
 Any contributions to add more shell supports are always welcomed.
 
 ## Getting Started
@@ -711,6 +715,14 @@ The followings are standard functions provided by Gomega, which is Ginkgo's pref
 - Equal
 
 Please refer to [Ginkgo's official documentation](https://onsi.github.io/ginkgo/) for knowing what each Ginkgo and Gomega functions mean and how to write Ginkgo test scenarios.
+
+## Writinng End-to-End test
+
+As stated in the very beginning of this documentation, one of primary goals of `gosh` is to help writing maintainable End-to-End tests.
+
+> That use-case is driven by all the features explained so far. So please read the above guides beforehand, or go back to read any of those when you had hard time understanding what's explained in this section.
+
+
 
 # Acknowledgements
 
