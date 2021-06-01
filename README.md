@@ -359,7 +359,7 @@ sh.Export("hello", func(ctx gosh.Context, target string) {
 
 Although a shell function's argument should be a string in general, this doesn't mean you need to manually parse it into a more useful type that aligns with your goal.
 
-Just use other supported types in the parameters as listed below. `gosh` automatically parses the argument to the type you've specified.
+Just use other supported types in the parameters as listed below. `gosh` automatically parses the argument into the type you've specified.
 
 - `int`
 - `bool`
