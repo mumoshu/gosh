@@ -188,6 +188,18 @@ func New() *gosh.Shell {
 		}()
 
 		if !opts.DryRun {
+			if err := sh.Run(gosh.Cmd(kubeconfigEnv, "export")); err != nil {
+				return err
+			}
+
+			if err := sh.Run(ctx, kubeconfigEnv, "kind", "export", "kubeconfig", "--name", name); err != nil {
+				return err
+			}
+
+			if _, err := os.Stat(kubeconfigPath); err != nil {
+				return fmt.Errorf("failed finding exported kubeconfig: %w", err)
+			}
+
 			if err := sh.Run(ctx, kubeconfigEnv, "kubectl", "get", "node"); err != nil {
 				return err
 			}

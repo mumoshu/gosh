@@ -242,10 +242,10 @@ func (c *App) runInteractiveShell(ctx Context) (int, error) {
 		interactive = terminal.IsTerminal(int(osFile.Fd()))
 	}
 
-	return c.runInternal(ctx, interactive, nil)
+	return c.runInternal(ctx, interactive, nil, RunConfig{})
 }
 
-func (c *App) runNonInteractiveShell(ctx Context, args []string) (int, error) {
+func (c *App) runNonInteractiveShell(ctx Context, args []string, cfg RunConfig) (int, error) {
 	var isCmd bool
 
 	if len(args) > 0 {
@@ -267,10 +267,10 @@ func (c *App) runNonInteractiveShell(ctx Context, args []string) (int, error) {
 		bashArgs = append(bashArgs, args...)
 	}
 
-	return c.runInternal(ctx, false, bashArgs)
+	return c.runInternal(ctx, false, bashArgs, cfg)
 }
 
-func (c *App) runInternal(ctx Context, interactive bool, args []string) (int, error) {
+func (c *App) runInternal(ctx Context, interactive bool, args []string, cfg RunConfig) (int, error) {
 	envfile, err := c.buildEnvfile(interactive)
 	if err != nil {
 		return 0, err
@@ -300,7 +300,7 @@ func (c *App) runInternal(ctx Context, interactive bool, args []string) (int, er
 	if !interactive {
 		cmd.Env = append(cmd.Env, "BASH_ENV="+envfile)
 	}
-	cmd.Env = append(cmd.Env, c.Env...)
+	cmd.Env = append(cmd.Env, cfg.Env...)
 	cmd.Stdin = ctx.Stdin()
 	cmd.Stdout = ctx.Stdout()
 	cmd.Stderr = ctx.Stderr()
@@ -377,7 +377,7 @@ func (app *App) Run(ctx Context, args []interface{}, cfg RunConfig) error {
 		}
 	}
 
-	_, err := app.runNonInteractiveShell(ctx, shellArgs)
+	_, err := app.runNonInteractiveShell(ctx, shellArgs, cfg)
 
 	return err
 }
@@ -772,11 +772,13 @@ func (t *Shell) Run(vars ...interface{}) error {
 
 		const GoshTestNameEnv = "GOSH_TEST_NAME"
 
+		var env []string
+
 		if testCtx != nil {
 			// selfArgs = append(selfArgs, os.Args[1:]...)
 			selfArgs = append(selfArgs, "-test.run=^"+testCtx.Name()+"$")
 
-			rc.Env = append(rc.Env, GoshTestNameEnv+"="+testCtx.Name())
+			env = append(env, GoshTestNameEnv+"="+testCtx.Name())
 		} else {
 			// os.Args can be something like the below when run via test
 			//  /tmp/go-build2810781305/b001/arctest.test -test.testlogfile=/tmp/go-build2810781305/b001/testlog.txt -test.paniconexit0 -test.timeout=30s -test.run=^TestAcc$ ::: hello world
@@ -796,7 +798,7 @@ func (t *Shell) Run(vars ...interface{}) error {
 			if testRun != "" {
 				selfArgs = append(selfArgs, testRun)
 
-				rc.Env = append(rc.Env, GoshTestNameEnv+"="+strings.TrimRight(strings.TrimLeft(strings.TrimLeft(testRun, "-test.run="), "^"), "$"))
+				env = append(env, GoshTestNameEnv+"="+strings.TrimRight(strings.TrimLeft(strings.TrimLeft(testRun, "-test.run="), "^"), "$"))
 			} else if strings.HasSuffix(os.Args[0], ".test") {
 				panic(fmt.Errorf("missing testing.T object in Run() args: %v", args))
 			}
@@ -810,7 +812,7 @@ func (t *Shell) Run(vars ...interface{}) error {
 			TriggerArg: ":::",
 			SelfPath:   ex,
 			SelfArgs:   selfArgs,
-			Env:        rc.Env,
+			Env:        env,
 		}
 	})
 
@@ -825,6 +827,8 @@ func (t *Shell) Run(vars ...interface{}) error {
 	if len(cmds) > 0 {
 		return t.runPipeline(ctx, cmds)
 	}
+
+	rc.Env = append(rc.Env, t.app.Env...)
 
 	return t.app.Run(ctx, args, rc)
 }
