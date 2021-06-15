@@ -3,10 +3,8 @@ package arctest
 import (
 	"fmt"
 	"os"
-	"strings"
 
 	"github.com/mumoshu/gosh"
-	. "github.com/mumoshu/gosh"
 )
 
 func GetRepo() (string, error) {
@@ -95,133 +93,47 @@ func Foo(kubeconfig string) error {
 	return nil
 }
 
-func printCmdNameForFuncOrMethod(export func(...interface{}), up interface{}) {
-	name1 := gosh.FuncOrMethodToCmdName(up)
-	println("funcname=", name1)
-}
-
-func Setup3(m string) (string, error) {
-	return m, nil
-}
-
-func echoStr(m string) (string, error) {
-	return "echoed" + m, nil
-}
-
-func echoStrMap(m map[string]string) (map[string]string, error) {
-	return m, nil
-}
-
-func echoStrMapKV(k, v string) (map[string]string, error) {
-	return map[string]string{k: v}, nil
-}
-
 func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
-	var export = sh.Export
-	var run = sh.Run
-	var echo = func(ctx gosh.Context, format string, args ...interface{}) {
+	var Echof = func(ctx gosh.Context, format string, args ...interface{}) {
 		fmt.Fprintf(ctx.Stdout(), format+"\n", args...)
 	}
 
-	// printCmdNameForFuncOrMethod(export, SetupTestBranch)
-	// printCmdNameForFuncOrMethod(export, RenderAndWriteFiles)
-	// printCmdNameForFuncOrMethod(export, sh.Run)
+	type Config struct {
+		Region string `flag:"region"`
+	}
 
-	export("hello", func(ctx gosh.Context, s string) {
-		fmt.Fprintf(ctx.Stdout(), "hello %s\n", s)
-		fmt.Fprintf(ctx.Stderr(), "hello %s (stderr)\n", s)
+	sh.Export("terraform", func(ctx gosh.Context, cmd string, args []string) {
+		Echof(ctx, "cmd=%s, args=%v", cmd, args)
 	})
 
-	export("setup1", func(ctx gosh.Context, s []string) {
-		fmt.Fprintf(ctx.Stdout(), "running setup1\n")
+	sh.Export("terraform-apply", func(ctx gosh.Context, dir string) {
+		sh.Run(ctx, "terraform", "apply", "-auto-approve")
 	})
 
-	export("setup2", func(ctx gosh.Context, s []string) {
-		ctx.Set("dir", s[0])
+	sh.Export("terraform-destroy", func(ctx gosh.Context, dir string) {
+		sh.Run(ctx, "terraform", "destroy", "-auto-approve")
 	})
 
-	export(Setup3)
-	export(echoStr)
-	export(echoStrMap)
-
-	export("foo", Dep("setup1"), Dep("setup2", "bb"), func(ctx gosh.Context, s []string) {
-		_ = run(ctx, "setup3", "aa")
-
-		var d string
-		_ = run(ctx, echoStr, "foo", Out(&d))
-		if d != "echoedfoo" {
-			panic(d)
-		}
-
-		var m map[string]string
-		_ = run(echoStrMap, map[string]string{"foo": "FOO"}, Out(&m))
-		if m["foo"] != "FOO" {
-			panic(fmt.Sprintf("%v", m))
-		}
-
-		dir := ctx.Get("dir").(string)
-
-		echo(ctx, "dir=%s", dir)
-		echo(ctx, strings.Join(s, " "))
+	sh.Export("deploy", func(ctx gosh.Context) {
+		sh.Run(ctx, "./scripts/deploy.sh")
 	})
 
-	export("tfup", func(ctx gosh.Context, dir string) {
-		run(ctx, "terraform", "apply", "-auto-approve")
+	sh.Export("test", func(ctx gosh.Context) {
+
 	})
 
-	export("tfdown", func(ctx gosh.Context, dir string) {
-		run(ctx, "terraform", "destroy", "-auto-approve")
-	})
+	sh.Export("e2e", func(ctx gosh.Context) {
+		ctx.Stdout().Write([]byte("hello " + "world" + "\n"))
+		ctx.Stderr().Write([]byte("hello " + "world" + " (stderr)\n"))
 
-	export("k8sup", func(ctx gosh.Context) {
-		run(ctx, "helmfile", "apply")
-	})
+		sh.Run("terraform-apply", "foo")
+		defer sh.Run("terraform-destroy", "foo")
 
-	export("all", func(ctx gosh.Context, dir string, b bool, i int) {
-		ctx.Stdout().Write([]byte(fmt.Sprintf("dir=%v, b=%v, i=%v\n", dir, b, i)))
+		sh.Run("deploy")
 
-		run(ctx, "tfup", dir)
-		defer run(ctx, "tfdown", dir)
-
-		run(ctx, "k8sapply")
-	})
-
-	export("ctx3", func(ctx gosh.Context) error {
-		b, lsErr := sh.GoPipe(ctx, "ls", "-lah")
-
-		grepErr := sh.GoRun(b, "grep", "test")
-
-		var count int
-		for {
-			fmt.Fprintf(os.Stderr, "x count=%d\n", count)
-			select {
-			case err := <-lsErr:
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "lserr %v\n", err)
-					return err
-				}
-				fmt.Fprintf(os.Stderr, "ls\n")
-
-				count++
-			case err := <-grepErr:
-				if err != nil {
-					fmt.Fprintf(os.Stderr, "greperr\n")
-					return err
-				}
-				fmt.Fprintf(os.Stderr, "grep\n")
-				count++
-			}
-			fmt.Fprintf(os.Stderr, "selected count=%d\n", count)
-			if count == 2 {
-				break
-			}
-		}
-
-		fmt.Fprintf(os.Stderr, "exiting\n")
-
-		return fmt.Errorf("some error")
+		sh.Run("test")
 	})
 
 	return sh

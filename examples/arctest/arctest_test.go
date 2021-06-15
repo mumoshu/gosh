@@ -1,9 +1,6 @@
 package arctest_test
 
 import (
-	"bytes"
-	"fmt"
-	"os"
 	"reflect"
 	"testing"
 
@@ -13,32 +10,34 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestArctest(t *testing.T) {
+func TestUndefinedCommand(t *testing.T) {
 	arctest := arctest.New()
 
-	if err := arctest.Run("all", "tmpdir", false, 1); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestBashEnv(t *testing.T) {
-	sh := arctest.New()
-
-	goshtest.Run(t, sh, func() {
-		fmt.Fprintf(os.Stderr, "%v\n", os.Args)
-		var stdout, stderr bytes.Buffer
-
-		err := sh.Run(t, "bash", "-c", "hello world", gosh.WriteStdout(&stdout), gosh.WriteStderr(&stderr))
-
-		if err != nil {
-			t.Fatal(err)
+	goshtest.Run(t, arctest, func() {
+		if err := arctest.Run(t, "all"); err == nil {
+			t.Fatal("expected error didnt occur")
 		}
-
-		assert.Equal(t, "hello world\n", stdout.String())
-		assert.Equal(t, "hello world (stderr)\n", stderr.String())
-		// assert.Equal(t, "", stderr.String())
 	})
 }
+
+// func TestBashEnv(t *testing.T) {
+// 	sh := arctest.New()
+
+// 	goshtest.Run(t, sh, func() {
+// 		fmt.Fprintf(os.Stderr, "%v\n", os.Args)
+// 		var stdout, stderr bytes.Buffer
+
+// 		err := sh.Run(t, "bash", "-c", "hello world", gosh.WriteStdout(&stdout), gosh.WriteStderr(&stderr))
+
+// 		if err != nil {
+// 			t.Fatal(err)
+// 		}
+
+// 		assert.Equal(t, "hello world\n", stdout.String())
+// 		assert.Equal(t, "hello world (stderr)\n", stderr.String())
+// 		// assert.Equal(t, "", stderr.String())
+// 	})
+// }
 
 func TestReflectionFuncName(t *testing.T) {
 	funOptionType := reflect.TypeOf(gosh.FunOption(func(fo *gosh.FunOptions) {}))

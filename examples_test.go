@@ -23,7 +23,6 @@ func TestAtoiBasic(t *testing.T) {
 
 	goshtest.Run(t, sh, func() {
 		t.Run("ok", func(t *testing.T) {
-			fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 			var stdout bytes.Buffer
 
 			var i int
@@ -39,7 +38,6 @@ func TestAtoiBasic(t *testing.T) {
 		})
 
 		t.Run("err", func(t *testing.T) {
-			fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 			var stdout bytes.Buffer
 
 			err := sh.Run(t, "atoi", "aaa", gosh.WriteStdout(&stdout))
@@ -56,7 +54,6 @@ func TestAtoiFunc(t *testing.T) {
 
 	goshtest.Run(t, sh, func() {
 		t.Run("ok", func(t *testing.T) {
-			fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 			var stdout bytes.Buffer
 
 			var i int
@@ -72,7 +69,6 @@ func TestAtoiFunc(t *testing.T) {
 		})
 
 		t.Run("err", func(t *testing.T) {
-			fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 			var stdout bytes.Buffer
 
 			err := sh.Run(t, "atoi", "aaa", gosh.WriteStdout(&stdout))
@@ -97,7 +93,6 @@ func TestAtoiMethod(t *testing.T) {
 
 	goshtest.Run(t, sh, func() {
 		t.Run("ok", func(t *testing.T) {
-			fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 			var stdout bytes.Buffer
 
 			var i int
@@ -113,7 +108,6 @@ func TestAtoiMethod(t *testing.T) {
 		})
 
 		t.Run("err", func(t *testing.T) {
-			fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 			var stdout bytes.Buffer
 
 			err := sh.Run(t, "atoi", "aaa", gosh.WriteStdout(&stdout))
@@ -132,8 +126,7 @@ func TestAtoiStruct(t *testing.T) {
 
 	goshtest.Run(t, sh, func() {
 		t.Run("ok", func(t *testing.T) {
-			fmt.Fprintf(os.Stderr, "%v\n", os.Args)
-			var stdout bytes.Buffer
+			fvar stdout bytes.Buffer
 
 			var i int
 
@@ -148,7 +141,6 @@ func TestAtoiStruct(t *testing.T) {
 		})
 
 		t.Run("err", func(t *testing.T) {
-			fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 			var stdout bytes.Buffer
 
 			err := sh.Run(t, "atoi", "aaa", gosh.WriteStdout(&stdout))

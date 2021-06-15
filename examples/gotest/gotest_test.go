@@ -2,8 +2,6 @@ package gotest_test
 
 import (
 	"bytes"
-	"fmt"
-	"os"
 	"testing"
 
 	"github.com/mumoshu/gosh"
@@ -15,28 +13,31 @@ import (
 func TestUnitSmoke(t *testing.T) {
 	gotest := gotest.New()
 
-	if err := gotest.Run("hello", "world"); err != nil {
-		t.Fatal(err)
-	}
+	goshtest.Run(t, gotest, func() {
+		if err := gotest.Run(t, "hello", "world"); err != nil {
+			t.Fatal(err)
+		}
+	})
 }
 
 func TestUnit(t *testing.T) {
 	gotest := gotest.New()
 
-	var stdout bytes.Buffer
+	goshtest.Run(t, gotest, func() {
+		var stdout bytes.Buffer
 
-	if err := gotest.Run("hello", "world", gosh.WriteStdout(&stdout)); err != nil {
-		t.Fatal(err)
-	}
+		if err := gotest.Run(t, "hello", "world", gosh.WriteStdout(&stdout)); err != nil {
+			t.Fatal(err)
+		}
 
-	assert.Equal(t, "hello world\n", stdout.String())
+		assert.Equal(t, "hello world\n", stdout.String())
+	})
 }
 
 func TestIntegration(t *testing.T) {
 	sh := gotest.New()
 
 	goshtest.Run(t, sh, func() {
-		fmt.Fprintf(os.Stderr, "%v\n", os.Args)
 		var stdout bytes.Buffer
 
 		err := sh.Run(t, "bash", "-c", "for ((i=0;i<3;i++)); do hello world; done", gosh.WriteStdout(&stdout))

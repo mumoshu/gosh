@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/mumoshu/gosh"
 )
 
-var TestEnvName = "FOO"
+var TestEnvName = "GOSH_TEST_NAME"
 
 func Run(testCtx *testing.T, t *gosh.Shell, f func()) {
+	testCtx.Helper()
+
 	if os.Getenv(TestEnvName) != "" {
 		var osArgs []string
 
@@ -54,18 +57,28 @@ func Run(testCtx *testing.T, t *gosh.Shell, f func()) {
 		os.Stdout = logFile
 		os.Stderr = logFile
 
+		if len(runArgs) == 0 {
+			testCtx.Error("runArgs is zero length. This means that your test target script called the test binary without any args, which shoudln't happen.")
+		}
+
 		fmt.Fprintf(os.Stderr, "ARGS=%v\n", runArgs)
-		if err := t.Run(append(runArgs, gosh.WriteStdout(&stdout), gosh.WriteStderr(&stderr))...); err != nil {
-			testCtx.Error(err)
+		err = t.Run(append(runArgs, gosh.WriteStdout(&stdout), gosh.WriteStderr(&stderr))...)
+		if err != nil {
+			testCtx.Error(fmt.Errorf("failed running %s: %v", strings.Join(osArgs, " "), err))
 		}
 
 		fmt.Fprint(origStderr, stderr.String())
 		fmt.Fprint(origStdout, stdout.String())
 
+		// This requires that we omit `-test.paniconexit0` on recursively running gosh-provided command.
+		if err != nil {
+			os.Exit(1)
+		}
+
+		os.Exit(0)
+
 		return
 	}
-
-	os.Setenv(TestEnvName, "foobar")
 
 	f()
 }

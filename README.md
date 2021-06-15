@@ -754,3 +754,8 @@ FD handling:
 
 - https://gist.github.com/miguelmota/4ac6c2c127b6853593808d9d3bba067f
 - https://stackoverflow.com/questions/7082001/how-do-file-descriptors-work
+
+Shell scripting tips:
+
+- https://www.cyberciti.biz/faq/bash-for-loop/
+- https://www.gnu.org/software/bash/manual/html_node/Redirections.html#Here-Strings

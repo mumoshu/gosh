@@ -12,11 +12,13 @@ import (
 )
 
 var app *gosh.Shell
+var tt *testing.T
 
 func TestAcc(t *testing.T) {
 	app = ginkgotest.New()
 
 	goshtest.Run(t, app, func() {
+		tt = t
 		RegisterFailHandler(Fail)
 		RunSpecs(t, "Your App's Suite")
 	})
@@ -43,6 +45,7 @@ var _ = Describe("Your App", func() {
 
 		var args []interface{}
 
+		args = append(args, tt)
 		args = append(args, config.cmd)
 		args = append(args, config.args...)
 		args = append(args, gosh.WriteStdout(&stdoutBuf))

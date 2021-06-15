@@ -11,12 +11,14 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var tt *testing.T
 var arctestSh *gosh.Shell
 
 func TestAcc(t *testing.T) {
 	arctestSh = arctest.New()
 
 	goshtest.Run(t, arctestSh, func() {
+		tt = t
 		RegisterFailHandler(Fail)
 		RunSpecs(t, "Books Suite")
 	})
@@ -44,6 +46,7 @@ var _ = Describe("arctest", func() {
 
 		var args []interface{}
 
+		args = append(args, tt)
 		args = append(args, config.cmd)
 		args = append(args, config.args...)
 		args = append(args, gosh.WriteStdout(&stdoutBuf), gosh.WriteStderr(&stderrBuf))
@@ -54,12 +57,12 @@ var _ = Describe("arctest", func() {
 		stderr = stderrBuf.String()
 	})
 
-	Describe("hello", func() {
+	Describe("e2e", func() {
 		BeforeEach(func() {
-			config.cmd = "hello"
+			config.cmd = "e2e"
 		})
 
-		Context("world", func() {
+		Context("default", func() {
 			BeforeEach(func() {
 				config.args = []interface{}{"world"}
 			})
@@ -77,22 +80,5 @@ var _ = Describe("arctest", func() {
 			})
 		})
 
-		Context("sekai", func() {
-			BeforeEach(func() {
-				config.args = []interface{}{"sekai"}
-			})
-
-			It("should output \"hello sekai\"", func() {
-				Expect(stdout).To(Equal("hello sekai\n"))
-			})
-
-			It("should write \"hello sekai (stderr)\" to stderr", func() {
-				Expect(stderr).To(Equal("hello sekai (stderr)\n"))
-			})
-
-			It("should not error", func() {
-				Expect(err).ToNot(HaveOccurred())
-			})
-		})
 	})
 })

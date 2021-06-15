@@ -31,6 +31,7 @@ type App struct {
 	SelfArgs   []string
 	Pkg        string
 	Debug      bool
+	Env        []string
 
 	funcs map[string]FunWithOpts
 }
@@ -144,6 +145,10 @@ func (c *App) handleFuncs(ctx Context, args []interface{}, outs []Output, called
 }
 
 func (c *App) printEnv(file io.Writer, interactive bool) {
+	if len(c.SelfArgs) == 0 {
+		panic(fmt.Errorf("[bug] empty self args while running: %v", os.Args))
+	}
+
 	var selfArgs []string
 
 	selfArgs = append(selfArgs, c.SelfArgs...)
@@ -209,6 +214,15 @@ trap 'preexec_invoke_exec' DEBUG
 }
 
 func (c *App) buildEnvfile(interactive bool) (string, error) {
+	files, err := filepath.Glob(filepath.Join(c.Dir, "bashenv.*"))
+	if err != nil {
+		return "", fmt.Errorf("failed globbing bashenv files: %w", err)
+	}
+
+	if len(files) > 5 {
+		return "", fmt.Errorf("too many bashenv files found (%d). perhaps you've falling into a infinite recursion?", len(files))
+	}
+
 	file, err := ioutil.TempFile(c.Dir, "bashenv.")
 	if err != nil {
 		return "", err
@@ -271,14 +285,22 @@ func (c *App) runInternal(ctx Context, interactive bool, args []string) (int, er
 	// See https://golang.hateblo.jp/entry/golang-signal-urgent-io-condition
 	signal.Ignore(syscall.Signal(0x17))
 
-	bashArgs := []string{"--rcfile", envfile}
+	bashArgs := []string{}
+
+	if interactive {
+		bashArgs = append(bashArgs, "--rcfile", envfile)
+	}
 
 	bashArgs = append(bashArgs, args...)
 
 	// println(fmt.Sprintf("App.run: running %v: bashArgs %v (%d)", args, bashArgs, len(bashArgs)))
 
 	cmd := exec.Command(c.BashPath, bashArgs...)
-	cmd.Env = append(os.Environ(), "BASH_ENV="+envfile)
+	cmd.Env = os.Environ()
+	if !interactive {
+		cmd.Env = append(cmd.Env, "BASH_ENV="+envfile)
+	}
+	cmd.Env = append(cmd.Env, c.Env...)
 	cmd.Stdin = ctx.Stdin()
 	cmd.Stdout = ctx.Stdout()
 	cmd.Stderr = ctx.Stderr()
@@ -615,9 +637,11 @@ type StdoutSink struct {
 	w io.Writer
 }
 
-func WriteStdout(w io.Writer) StdoutSink {
-	return StdoutSink{
-		w: w,
+func WriteStdout(w io.Writer) RunOption {
+	return func(rc *RunConfig) {
+		rc.Stdout = StdoutSink{
+			w: w,
+		}
 	}
 }
 
@@ -625,11 +649,15 @@ type StderrSink struct {
 	w io.Writer
 }
 
-func WriteStderr(w io.Writer) StderrSink {
-	return StderrSink{
-		w: w,
+func WriteStderr(w io.Writer) RunOption {
+	return func(rc *RunConfig) {
+		rc.Stderr = StderrSink{
+			w: w,
+		}
 	}
 }
+
+type RunOption func(*RunConfig)
 
 type RunConfig struct {
 	Outputs []Output
@@ -654,10 +682,9 @@ func (t *Shell) Run(vars ...interface{}) error {
 	var args []interface{}
 	var ctx Context
 	var cmds []Command
-	var outs []Output
-	var stdout StdoutSink
-	var stderr StderrSink
 	var testCtx *testing.T
+	var rc RunConfig
+	var env []string
 
 	for _, v := range vars {
 		switch typed := v.(type) {
@@ -670,11 +697,13 @@ func (t *Shell) Run(vars ...interface{}) error {
 		case Command:
 			cmds = append(cmds, typed)
 		case Output:
-			outs = append(outs, typed)
+			rc.Outputs = append(rc.Outputs, typed)
 		case StdoutSink:
-			stdout = typed
+			rc.Stdout = typed
 		case StderrSink:
-			stderr = typed
+			rc.Stderr = typed
+		case RunOption:
+			typed(&rc)
 		case *testing.T:
 			testCtx = typed
 		default:
@@ -695,12 +724,12 @@ func (t *Shell) Run(vars ...interface{}) error {
 			stderr: os.Stderr,
 		}
 
-		if stdout.w != nil {
-			c.stdout = stdout.w
+		if rc.Stdout.w != nil {
+			c.stdout = rc.Stdout.w
 		}
 
-		if stderr.w != nil {
-			c.stderr = stderr.w
+		if rc.Stderr.w != nil {
+			c.stderr = rc.Stderr.w
 		}
 
 		ctx = c
@@ -736,20 +765,35 @@ func (t *Shell) Run(vars ...interface{}) error {
 
 		var selfArgs []string
 
-		if testCtx != nil {
-			selfArgs = append(selfArgs, os.Args[1:]...)
+		const GoshTestNameEnv = "GOSH_TEST_NAME"
 
-			var testRunExists bool
+		if testCtx != nil {
+			// selfArgs = append(selfArgs, os.Args[1:]...)
+			selfArgs = append(selfArgs, "-test.run=^"+testCtx.Name()+"$")
+
+			env = append(env, GoshTestNameEnv+"="+testCtx.Name())
+		} else {
+			// os.Args can be something like the below when run via test
+			//  /tmp/go-build2810781305/b001/arctest.test -test.testlogfile=/tmp/go-build2810781305/b001/testlog.txt -test.paniconexit0 -test.timeout=30s -test.run=^TestAcc$ ::: hello world
+			//
+			// It's especially important to set/inherit `-test.run`, but not `-test.paniconexit0`.
+			// The former is required to correctly redirect the recursive command to the test function that invoked it.
+			// The latter is required to not pollute the recursively invoked command's stdout/stderr with go test output.
+			var testRun string
 			for _, a := range os.Args[1:] {
 				if strings.HasPrefix(a, "-test.run=") {
-					testRunExists = true
+					testRun = a
 					break
 				}
 			}
 
 			// Needed to only trigger the target command when you run all the go tests
-			if !testRunExists {
-				selfArgs = append(selfArgs, "-test.run=^"+testCtx.Name()+"$")
+			if testRun != "" {
+				selfArgs = append(selfArgs, testRun)
+
+				env = append(env, GoshTestNameEnv+"="+strings.TrimRight(strings.TrimLeft(strings.TrimLeft(testRun, "-test.run="), "^"), "$"))
+			} else if strings.HasSuffix(os.Args[0], ".test") {
+				panic(fmt.Errorf("missing testing.T object in Run() args: %v", args))
 			}
 		}
 
@@ -761,6 +805,7 @@ func (t *Shell) Run(vars ...interface{}) error {
 			TriggerArg: ":::",
 			SelfPath:   ex,
 			SelfArgs:   selfArgs,
+			Env:        env,
 		}
 	})
 
@@ -768,15 +813,15 @@ func (t *Shell) Run(vars ...interface{}) error {
 		return initErr
 	}
 
+	if t.app == nil {
+		return fmt.Errorf("[bug] app is not initialized")
+	}
+
 	if len(cmds) > 0 {
 		return t.runPipeline(ctx, cmds)
 	}
 
-	return t.app.Run(ctx, args, RunConfig{
-		Outputs: outs,
-		Stdout:  stdout,
-		Stderr:  stderr,
-	})
+	return t.app.Run(ctx, args, rc)
 }
 
 func (c *App) Dep(args ...interface{}) error {
