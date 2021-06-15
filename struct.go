@@ -85,6 +85,10 @@ func (f *structFieldsReflector) SetStruct(cmd string, v reflect.Value, args []in
 		return fmt.Errorf("parse %s: %w", cmd, err)
 	}
 
+	if len(fs.Args()) > 0 {
+		return fmt.Errorf("%d args remained unparsed: %v", len(fs.Args()), fs.Args())
+	}
+
 	return nil
 }
 

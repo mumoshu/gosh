@@ -3,6 +3,7 @@ package arctest
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/mumoshu/gosh"
 )
@@ -124,7 +125,74 @@ func New() *gosh.Shell {
 
 	})
 
-	sh.Export("e2e", func(ctx gosh.Context) {
+	const ActionsRunnerControllerPath = "~/actions-runner-controller"
+
+	type Opts struct {
+		SkipClean bool   `flag:"skip-clean"`
+		DryRun    bool   `flag:"dry-run"`
+		TestID    string `flag:"test-id"`
+	}
+
+	infof := func(ctx gosh.Context, format string, args ...interface{}) {
+		fmt.Fprintf(ctx.Stderr(), format+"\n", args...)
+	}
+
+	sh.Export("e2e", func(ctx gosh.Context, opts Opts) error {
+		if err := os.MkdirAll(".e2e", 0755); err != nil {
+			return err
+		}
+
+		var workDir string
+
+		if opts.TestID != "" {
+			workDir = filepath.Join(".e2e", "work"+opts.TestID)
+			if err := os.MkdirAll(workDir, 0755); err != nil {
+				return err
+			}
+		} else {
+			var err error
+
+			workDir, err = os.MkdirTemp(".e2e", "work")
+			if err != nil {
+				return err
+			}
+		}
+		infof(ctx, "Using workdir at %s", workDir)
+		defer func() {
+			if opts.SkipClean {
+				infof(ctx, "Skipped removing %s", workDir)
+				return
+			}
+			if workDir == "" || workDir == "/" || workDir == "." {
+				return
+			}
+			os.RemoveAll(workDir)
+		}()
+
+		name := filepath.Base(workDir)
+
+		kubeconfigPath := filepath.Join(workDir, "kubeconfig")
+		kubeconfigEnv := gosh.Env(fmt.Sprintf("%s=%s", "KUBECONFIG", kubeconfigPath))
+
+		if !opts.DryRun {
+			if err := sh.Run(ctx, kubeconfigEnv, "kind", "create", "cluster", "--name", name); err != nil {
+				return err
+			}
+		}
+		defer func() {
+			if opts.SkipClean {
+				infof(ctx, "Skipped `kind delete cluster --name %s`", name)
+				return
+			}
+			sh.Run(ctx, "kind", "delete", "cluster", "--name", name)
+		}()
+
+		if !opts.DryRun {
+			if err := sh.Run(ctx, kubeconfigEnv, "kubectl", "get", "node"); err != nil {
+				return err
+			}
+		}
+
 		ctx.Stdout().Write([]byte("hello " + "world" + "\n"))
 		ctx.Stderr().Write([]byte("hello " + "world" + " (stderr)\n"))
 
@@ -134,6 +202,8 @@ func New() *gosh.Shell {
 		sh.Run("deploy")
 
 		sh.Run("test")
+
+		return nil
 	})
 
 	return sh

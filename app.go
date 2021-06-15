@@ -145,7 +145,7 @@ func (c *App) handleFuncs(ctx Context, args []interface{}, outs []Output, called
 }
 
 func (c *App) printEnv(file io.Writer, interactive bool) {
-	if len(c.SelfArgs) == 0 {
+	if strings.HasSuffix(os.Args[0], ".test") && len(c.SelfArgs) == 0 {
 		panic(fmt.Errorf("[bug] empty self args while running: %v", os.Args))
 	}
 
@@ -633,6 +633,12 @@ func Out(p interface{}) Output {
 	return Output{value: reflect.ValueOf(p).Elem()}
 }
 
+func Env(v string) RunOption {
+	return func(rc *RunConfig) {
+		rc.Env = append(rc.Env, v)
+	}
+}
+
 type StdoutSink struct {
 	w io.Writer
 }
@@ -663,6 +669,7 @@ type RunConfig struct {
 	Outputs []Output
 	Stdout  StdoutSink
 	Stderr  StderrSink
+	Env     []string
 }
 
 func (t *Shell) MustExec(osArgs []string) {
@@ -684,8 +691,6 @@ func (t *Shell) Run(vars ...interface{}) error {
 	var cmds []Command
 	var testCtx *testing.T
 	var rc RunConfig
-	var env []string
-
 	for _, v := range vars {
 		switch typed := v.(type) {
 		case Context:
@@ -771,7 +776,7 @@ func (t *Shell) Run(vars ...interface{}) error {
 			// selfArgs = append(selfArgs, os.Args[1:]...)
 			selfArgs = append(selfArgs, "-test.run=^"+testCtx.Name()+"$")
 
-			env = append(env, GoshTestNameEnv+"="+testCtx.Name())
+			rc.Env = append(rc.Env, GoshTestNameEnv+"="+testCtx.Name())
 		} else {
 			// os.Args can be something like the below when run via test
 			//  /tmp/go-build2810781305/b001/arctest.test -test.testlogfile=/tmp/go-build2810781305/b001/testlog.txt -test.paniconexit0 -test.timeout=30s -test.run=^TestAcc$ ::: hello world
@@ -791,7 +796,7 @@ func (t *Shell) Run(vars ...interface{}) error {
 			if testRun != "" {
 				selfArgs = append(selfArgs, testRun)
 
-				env = append(env, GoshTestNameEnv+"="+strings.TrimRight(strings.TrimLeft(strings.TrimLeft(testRun, "-test.run="), "^"), "$"))
+				rc.Env = append(rc.Env, GoshTestNameEnv+"="+strings.TrimRight(strings.TrimLeft(strings.TrimLeft(testRun, "-test.run="), "^"), "$"))
 			} else if strings.HasSuffix(os.Args[0], ".test") {
 				panic(fmt.Errorf("missing testing.T object in Run() args: %v", args))
 			}
@@ -805,7 +810,7 @@ func (t *Shell) Run(vars ...interface{}) error {
 			TriggerArg: ":::",
 			SelfPath:   ex,
 			SelfArgs:   selfArgs,
-			Env:        env,
+			Env:        rc.Env,
 		}
 	})
 

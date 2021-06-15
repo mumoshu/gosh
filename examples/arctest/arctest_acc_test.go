@@ -49,6 +49,7 @@ var _ = Describe("arctest", func() {
 		args = append(args, tt)
 		args = append(args, config.cmd)
 		args = append(args, config.args...)
+		args = append(args, "-dry-run", "-test-id=abcdefg")
 		args = append(args, gosh.WriteStdout(&stdoutBuf), gosh.WriteStderr(&stderrBuf))
 
 		err = arctestSh.Run(args...)
@@ -64,7 +65,7 @@ var _ = Describe("arctest", func() {
 
 		Context("default", func() {
 			BeforeEach(func() {
-				config.args = []interface{}{"world"}
+				config.args = []interface{}{}
 			})
 
 			It("should output \"hello world\"", func() {
@@ -72,7 +73,7 @@ var _ = Describe("arctest", func() {
 			})
 
 			It("should write \"hello world (stderr)\" to stderr", func() {
-				Expect(stderr).To(Equal("hello world (stderr)\n"))
+				Expect(stderr).To(Equal("Using workdir at .e2e/workabcdefg\nhello world (stderr)\nDeleting cluster \"workabcdefg\" ...\n"))
 			})
 
 			It("should not error", func() {

@@ -161,8 +161,10 @@ FOR:
 			// This returns a pointer to the value of the type i.e. new(foo), &foo{}, instead of foo{}.
 			v := reflect.New(inV)
 
+			flagArgs := funArgs[j:]
+
 			if err := f.SetStruct("call", v, funArgs[j:]); err != nil {
-				return nil, fmt.Errorf("call: %v", err)
+				return nil, fmt.Errorf("failed to map args to %v, for args starting at %d, %v: %v", inV.Name(), j, flagArgs, err)
 			}
 
 			// And that's why you need to take the Elem, which is the underlying value the pointer points.

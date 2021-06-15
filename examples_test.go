@@ -3,7 +3,6 @@ package gosh_test
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"strconv"
 	"testing"
 
@@ -126,7 +125,7 @@ func TestAtoiStruct(t *testing.T) {
 
 	goshtest.Run(t, sh, func() {
 		t.Run("ok", func(t *testing.T) {
-			fvar stdout bytes.Buffer
+			var stdout bytes.Buffer
 
 			var i int
 
