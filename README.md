@@ -35,7 +35,7 @@ Any contributions to add more shell supports are always welcomed.
 
 Get started by writing a Go application provides a shell that has a built-in `hello` function:
 
-```
+```go
 $ mkdir ./myapp; cat <<EOS > ./myapp/main.go
 package main
 
@@ -176,7 +176,7 @@ Once the new interactive shell session gets started, you use it like a regular s
 
 The `getting-started` example contains a custom function written in Go, named `hello`, that prints `hello <FIRST ARG>` to the standard output.
 
-```golang
+```go
 sh.Export("hello", func(ctx gosh.Context, target string) {
     ctx.Stdout().Write([]byte("hello " + target + "\n"))
 })
@@ -198,7 +198,7 @@ For example, we modify the code so that the custom function prints it without an
 $ code ./examples/getting-started/main.go
 ```
 
-```golang
+```go
 sh.Export("hello", func(ctx gosh.Context, target string) {
     ctx.Stdout().Write([]byte("konnichiwa " + target + "\n"))
 })
@@ -227,7 +227,7 @@ $ go run ./examples/commands/cmd
 
 Create an example input file:
 
-```
+```bash
 $ cat <<EOS > input.txt
 foo
 bar
@@ -251,7 +251,7 @@ using your `gosh` application as a build tool like `make`.
 
 Let's say you previously had a `Makefile` that looked like this:
 
-```
+```makefile
 .PHONY: all build test
 
 all: build test
@@ -265,7 +265,7 @@ test:
 
 You can rewrite it by using some Go code powered by `gosh` that looks like the below:
 
-```
+```go
 Export("all", Dep("build"), Dep("test"), func() {
 
 })
@@ -386,7 +386,7 @@ This feature makes it easy to define flags like `-foo=bar` for your custom funct
 
 The gist of the feature is that you can write a standard function that accepts all the optional parameters as a Go struct, like:
 
-```
+```go
 type Opts struct {
 	UpperCase bool `flag:"upper-case"`
 }
@@ -402,7 +402,7 @@ func Hello(ctx gosh.Context, a string, opts Opts) {
 
 As this is a standard Go function, you can write some Go to call it like:
 
-```
+```go
 Hello(ctx, "world", Opts{UpperCase: true})
 //=> HELLO WORLD
 ```
@@ -416,7 +416,7 @@ sh.Export(Hello)
 This makes it available to the custom shell from both the Go side and the shell side.
 That is, you can call it from Go using `Run`:
 
-```
+```go
 sh.Run("hello", "world", Opts{UppserCase: true})
 ```
 
@@ -428,13 +428,13 @@ hello world -upper-case=true
 
 For compatibility reason, you can actually use a more shell-like syntax when you call it from Go:
 
-```
+```go
 sh.Run("hello", "world", "-upper-case=true")
 ```
 
 This magic is driven by you define a struct tag. In the original example, you've seen in the struct:
 
-```
+```go
 UpperCase bool `flag:"upper-case"`
 ```
 
@@ -466,7 +466,7 @@ If you want to write a diagnostic log message from a custom function written in 
 $ code ./examples/getting-started/main.go
 ```
 
-```
+```go
 sh.Export("hello", func(ctx gosh.Context, target string) {
     // Add the below Diagf call
     sh.Diagf("My own debug message someData=%s someNumber=%d", "foobar", 123)
@@ -546,7 +546,7 @@ See the [gotest example](./examples/gotest/gotest_test.go) for how to write unit
 
 The below is the most standard structure of an unit test for your `gosh` application:
 
-```
+```go
 func TestUnit(t *testing.T) {
 	gotest := gotest.New()
 
@@ -642,7 +642,7 @@ See the [ginkgotest example](./examples/ginkgotest/ginkgotest_test.go) for how t
 
 The below is the most standard structure of an Ginkgo test for your `gosh` application:
 
-```
+```go
 var app *gosh.Shell
 
 func TestAcc(t *testing.T) {
