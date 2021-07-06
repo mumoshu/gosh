@@ -1,9 +1,12 @@
 package arctest
 
 import (
+	"bytes"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/mumoshu/gosh"
 )
@@ -125,7 +128,9 @@ func New() *gosh.Shell {
 
 	})
 
-	const ActionsRunnerControllerPath = "~/actions-runner-controller"
+	homeDir, _ := os.UserHomeDir()
+
+	ActionsRunnerControllerPath := filepath.Join(homeDir, "p", "actions-runner-controller")
 
 	type Opts struct {
 		SkipClean bool   `flag:"skip-clean"`
@@ -172,6 +177,11 @@ func New() *gosh.Shell {
 		name := filepath.Base(workDir)
 
 		kubeconfigPath := filepath.Join(workDir, "kubeconfig")
+		abs, err := filepath.Abs(kubeconfigPath)
+		if err != nil {
+			return fmt.Errorf("failed to obtain absoluet path of %s: %w", kubeconfigPath, err)
+		}
+		kubeconfigPath = abs
 		kubeconfigEnv := gosh.Env(fmt.Sprintf("%s=%s", "KUBECONFIG", kubeconfigPath))
 
 		if !opts.DryRun {
@@ -200,7 +210,50 @@ func New() *gosh.Shell {
 				return fmt.Errorf("failed finding exported kubeconfig: %w", err)
 			}
 
+			var buf bytes.Buffer
+
+			if err := sh.Run(ctx, kubeconfigEnv, "kubectl", "config", "current-context", gosh.WriteStdout(&buf)); err != nil {
+				return fmt.Errorf("failed obtaining current kubeconfig context: %w", err)
+			}
+
+			currentContext := buf.String()
+
+			infof(ctx, "current context is %q", currentContext)
+
+			currentContext = "kind-" + name
+
 			if err := sh.Run(ctx, kubeconfigEnv, "kubectl", "get", "node"); err != nil {
+				return err
+			}
+
+			chdirToWorkspace := gosh.Dir(ActionsRunnerControllerPath)
+
+			var envFromEnvrc []string
+
+			envrcContent, err := ioutil.ReadFile(filepath.Join(ActionsRunnerControllerPath, ".envrc"))
+			if err != nil {
+				return err
+			}
+
+			for _, line := range strings.Split(string(envrcContent), "\n") {
+				line = strings.TrimPrefix(line, "export ")
+				split := strings.Split(line, "=")
+				if len(split) != 2 {
+					continue
+				}
+				name, value := split[0], strings.TrimSuffix(strings.TrimPrefix(split[1], "\""), "\"")
+
+				if value == "~" || strings.HasPrefix(value, "~/") {
+					value = strings.Replace(value, "~", homeDir, 1)
+				}
+				envFromEnvrc = append(envFromEnvrc, name+"="+value)
+			}
+
+			envFromEnvrc = append(envFromEnvrc, "KUBECONTEXT="+currentContext, "CLUSTER="+name)
+
+			testEnv := gosh.Env(envFromEnvrc...)
+
+			if err := sh.Run(ctx, kubeconfigEnv, chdirToWorkspace, testEnv, "make", "docker-build", "acceptance/load", "acceptance/setup", "acceptance/deploy"); err != nil {
 				return err
 			}
 		}

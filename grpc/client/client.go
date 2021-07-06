@@ -34,7 +34,7 @@ import (
 	"time"
 
 	"github.com/mumoshu/gosh/data"
-	pb "github.com/mumoshu/gosh/remote"
+	pb "github.com/mumoshu/gosh/grpc/remote"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 )

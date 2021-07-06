@@ -300,6 +300,7 @@ func (c *App) runInternal(ctx Context, interactive bool, args []string, cfg RunC
 	if !interactive {
 		cmd.Env = append(cmd.Env, "BASH_ENV="+envfile)
 	}
+	cmd.Dir = cfg.Dir
 	cmd.Env = append(cmd.Env, cfg.Env...)
 	cmd.Stdin = ctx.Stdin()
 	cmd.Stdout = ctx.Stdout()
@@ -633,9 +634,17 @@ func Out(p interface{}) Output {
 	return Output{value: reflect.ValueOf(p).Elem()}
 }
 
-func Env(v string) RunOption {
+func Env(v ...string) RunOption {
 	return func(rc *RunConfig) {
-		rc.Env = append(rc.Env, v)
+		for _, v := range v {
+			rc.Env = append(rc.Env, v)
+		}
+	}
+}
+
+func Dir(dir string) RunOption {
+	return func(rc *RunConfig) {
+		rc.Dir = dir
 	}
 }
 
@@ -670,6 +679,7 @@ type RunConfig struct {
 	Stdout  StdoutSink
 	Stderr  StderrSink
 	Env     []string
+	Dir     string
 }
 
 func (t *Shell) MustExec(osArgs []string) {

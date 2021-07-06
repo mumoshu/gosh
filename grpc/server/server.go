@@ -43,7 +43,7 @@ import (
 	"github.com/mumoshu/gosh/data"
 	"google.golang.org/grpc/credentials"
 
-	pb "github.com/mumoshu/gosh/remote"
+	pb "github.com/mumoshu/gosh/grpc/remote"
 )
 
 var (
