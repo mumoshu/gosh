@@ -192,7 +192,10 @@ func New() *gosh.Shell {
 		kubeconfigEnv := gosh.Env(fmt.Sprintf("%s=%s", "KUBECONFIG", kubeconfigPath))
 
 		if !opts.DryRun {
-			if err := sh.Run(ctx, kubeconfigEnv, "kind", "create", "cluster", "--name", name); err != nil {
+			var buf bytes.Buffer
+
+			err := sh.Run(ctx, kubeconfigEnv, "kind", "create", "cluster", "--name", name, gosh.WriteStderr(&buf))
+			if err != nil && !strings.HasPrefix(buf.String(), "ERROR: failed to create cluster: node(s) already exist for a cluster with the name") {
 				return err
 			}
 		}
