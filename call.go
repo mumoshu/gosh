@@ -6,11 +6,11 @@ import (
 	"strconv"
 )
 
-func CallFunc(ctx Context, fun interface{}, funArgs ...interface{}) ([]reflect.Value, error) {
+func CallFunc(ctx Context, name string, fun interface{}, funArgs ...interface{}) ([]reflect.Value, error) {
 	fv := reflect.ValueOf(fun)
 	x := reflect.TypeOf(fun)
 
-	args, err := getArgs(ctx, x, funArgs)
+	args, err := getArgs(ctx, name, x, funArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -37,8 +37,8 @@ func CallFunc(ctx Context, fun interface{}, funArgs ...interface{}) ([]reflect.V
 	return values, nil
 }
 
-func CallMethod(ctx Context, m reflect.Value, funArgs ...interface{}) ([]reflect.Value, error) {
-	args, err := getArgs(ctx, m.Type(), funArgs)
+func CallMethod(ctx Context, name string, m reflect.Value, funArgs ...interface{}) ([]reflect.Value, error) {
+	args, err := getArgs(ctx, name, m.Type(), funArgs)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func CallMethod(ctx Context, m reflect.Value, funArgs ...interface{}) ([]reflect
 	return values, nil
 }
 
-func getArgs(ctx Context, x reflect.Type, funArgs []interface{}) ([]reflect.Value, error) {
+func getArgs(ctx Context, cmdName string, x reflect.Type, funArgs []interface{}) ([]reflect.Value, error) {
 	numIn := x.NumIn()
 	// numOut := x.NumOut()
 
@@ -163,7 +163,7 @@ FOR:
 
 			flagArgs := funArgs[j:]
 
-			if err := f.SetStruct("call", v, funArgs[j:]); err != nil {
+			if err := f.SetStruct(cmdName, v, funArgs[j:]); err != nil {
 				return nil, fmt.Errorf("failed to map args to %v, for args starting at %d, %v: %v", inV.Name(), j, flagArgs, err)
 			}
 

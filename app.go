@@ -414,8 +414,9 @@ type Dependency struct {
 }
 
 type Fun struct {
-	F interface{}
-	M *reflect.Value
+	Name string
+	F    interface{}
+	M    *reflect.Value
 }
 
 func (fn Fun) Call(ctx Context, args []interface{}) ([]reflect.Value, error) {
@@ -427,10 +428,10 @@ func (fn Fun) Call(ctx Context, args []interface{}) ([]reflect.Value, error) {
 	// default:
 
 	if fn.M != nil {
-		return CallMethod(ctx, *fn.M, args...)
+		return CallMethod(ctx, fn.Name, *fn.M, args...)
 	}
 
-	return CallFunc(ctx, fn.F, args...)
+	return CallFunc(ctx, fn.Name, fn.F, args...)
 	// }
 }
 
@@ -538,9 +539,9 @@ func (t *Shell) export(name string, fn interface{}, m *reflect.Value, opts []Fun
 	t.Diagf("registering func %s", name)
 
 	if m != nil {
-		t.funcs[name] = FunWithOpts{Fun: Fun{M: m}, Opts: funOpts}
+		t.funcs[name] = FunWithOpts{Fun: Fun{Name: name, M: m}, Opts: funOpts}
 	} else if fn != nil {
-		t.funcs[name] = FunWithOpts{Fun: Fun{F: fn}, Opts: funOpts}
+		t.funcs[name] = FunWithOpts{Fun: Fun{Name: name, F: fn}, Opts: funOpts}
 	} else {
 		panic(fmt.Errorf("unexpected args passed to export %s: fn=%v, m=%v, opts=%v", name, fn, m, opts))
 	}
@@ -562,6 +563,10 @@ func (t *Shell) Diagf(format string, args ...interface{}) {
 
 func FuncOrMethodToCmdName(f interface{}) string {
 	v := reflect.ValueOf(f)
+	return ReflectValueToCmdName(v)
+}
+
+func ReflectValueToCmdName(v reflect.Value) string {
 	name := runtime.FuncForPC(v.Pointer()).Name()
 	vs := strings.Split(name, ".")
 
