@@ -5,7 +5,7 @@
 The author started developing `gosh` to:
 
 - Make it extremely easy to gradually rewrite your complex shell script into a more maintainable equivalent - A Go application
-- Make it extremely easy to write a maintainable End-to-End test involves many shell commands and takes an hour or so to run
+- Make it extremely easy to write a maintainable End-to-End test that involves many shell commands and takes an hour or so to run
 
 But you can also use it for the following use-cases:
 
