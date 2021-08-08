@@ -142,6 +142,13 @@ func New() *gosh.Shell {
 		fmt.Fprintf(ctx.Stderr(), format+"\n", args...)
 	}
 
+	sh.Export("clean-e2e", func(ctx gosh.Context, opts Opts) error {
+		if err := sh.Run(ctx, "kind", "delete", "cluster", "--name", opts.TestID); err != nil {
+			return err
+		}
+		return nil
+	})
+
 	sh.Export("e2e", func(ctx gosh.Context, opts Opts) error {
 		if err := os.MkdirAll(".e2e", 0755); err != nil {
 			return err
@@ -194,7 +201,8 @@ func New() *gosh.Shell {
 				infof(ctx, "Skipped `kind delete cluster --name %s`", name)
 				return
 			}
-			sh.Run(ctx, "kind", "delete", "cluster", "--name", name)
+
+			sh.Run(ctx, "clean-e2e", "--test-id", name)
 		}()
 
 		if !opts.DryRun {

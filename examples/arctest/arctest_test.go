@@ -20,6 +20,26 @@ func TestUndefinedCommand(t *testing.T) {
 	})
 }
 
+func TestE2E(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipped e2e")
+	}
+
+	arctest := arctest.New()
+
+	goshtest.Run(t, arctest, func() {
+		testenv := "foo"
+
+		goshtest.Cleanup(t, func() {
+			_ = arctest.Run(t, "clean-e2e", "--test-id", testenv)
+		})
+
+		if err := arctest.Run(t, "e2e", "--skip-clean", "--test-id", testenv); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	})
+}
+
 // func TestBashEnv(t *testing.T) {
 // 	sh := arctest.New()
 

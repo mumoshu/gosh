@@ -82,3 +82,40 @@ func Run(testCtx *testing.T, t *gosh.Shell, f func()) {
 
 	f()
 }
+
+// Cleanup is similar to t.Cleanup(), but it only runs the cleanup function only when the whole test has succeded.
+// If the test as a whole failed, or go-test binary was instructed to run a specific subtest, the cleanup function isn't called,
+// so that you can iterate quicker.
+func Cleanup(t *testing.T, f func()) {
+	t.Helper()
+
+	t.Cleanup(func() {
+		var run string
+		for i := range os.Args {
+			// `go test -run $RUN` results in `/tmp/path/to/some.test -test.run $RUN` being run,
+			// and hence we check for -test.run
+			if os.Args[i] == "-test.run" {
+				runIdx := i + 1
+				run = os.Args[runIdx]
+				break
+			} else if strings.HasPrefix(os.Args[i], "-test.run=") {
+				split := strings.Split(os.Args[i], "-test.run=")
+				run = split[1]
+			}
+		}
+
+		if t.Failed() {
+			return
+		}
+
+		// Do not delete the cluster so that we can accelerate interation on tests
+		if run == "" || (run != "" && run != "^"+t.Name()+"$" && !strings.HasPrefix(run, "^"+t.Name()+"/")) {
+			// This should be printed to the debug console for visibility
+			t.Logf("Skipped stopping due to run being %q", run)
+			return
+		}
+
+		f()
+	})
+
+}
