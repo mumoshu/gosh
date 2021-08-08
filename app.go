@@ -356,6 +356,17 @@ func (app *App) Run(ctx Context, args []interface{}, cfg RunConfig) error {
 		}
 
 		ctx = c
+	} else {
+		switch c := ctx.(type) {
+		case *context:
+			if stdout.w != nil {
+				c.stdout = stdout.w
+			}
+
+			if stderr.w != nil {
+				c.stderr = stderr.w
+			}
+		}
 	}
 
 	funExists := app.HandleFuncs(ctx, args, outs)
