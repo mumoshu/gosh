@@ -871,21 +871,6 @@ func (c *App) DepStringMap(args ...interface{}) (map[string]string, error) {
 	return nil, nil
 }
 
-func (sh *Shell) GoPipe(ctx Context, vars ...interface{}) (Context, <-chan error) {
-	a, b, close := sh.PipeFromContext(ctx)
-
-	err := make(chan error)
-
-	go func() {
-		vars = append([]interface{}{a}, vars...)
-		e := sh.Run(vars...)
-		close()
-		err <- e
-	}()
-
-	return b, err
-}
-
 func (sh *Shell) GoRun(ctx Context, vars ...interface{}) <-chan error {
 	err := make(chan error)
 
@@ -896,24 +881,4 @@ func (sh *Shell) GoRun(ctx Context, vars ...interface{}) <-chan error {
 	}()
 
 	return err
-}
-
-func (sh *Shell) PipeFromContext(ctx Context) (Context, Context, func()) {
-	a, b := &context{}, &context{}
-
-	r, w := io.Pipe()
-
-	a.stdin = ctx.Stdin()
-	a.stdout = w
-	a.stderr = ctx.Stderr()
-
-	b.stdin = r
-	b.stdout = ctx.Stdout()
-	b.stderr = ctx.Stderr()
-
-	return a, b, func() {
-		if err := w.Close(); err != nil {
-			log.Fatal(err)
-		}
-	}
 }
