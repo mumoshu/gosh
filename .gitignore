@@ -3,3 +3,5 @@ sessions
 .cmds
 diags.out
 /getting-started
+.e2e
+bashenv.*
