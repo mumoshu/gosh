@@ -49,7 +49,7 @@ func New() *gosh.Shell {
 	})
 
 	sh.Export("ctx3", func(ctx context.Context) error {
-		b, lsErr := sh.GoPipe(ctx, "ls", "-lah")
+		b, lsErr := sh.Pipe(ctx, "ls", "-lah")
 
 		grepErr := sh.GoRun(b, "grep", "test")
 

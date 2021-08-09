@@ -7,7 +7,7 @@ import (
 	"github.com/mumoshu/gosh/context"
 )
 
-func (sh *Shell) GoPipe(ctx context.Context, vars ...interface{}) (context.Context, <-chan error) {
+func (sh *Shell) Pipe(ctx context.Context, vars ...interface{}) (context.Context, <-chan error) {
 	a, b, close := sh.PipeFromContext(ctx)
 
 	err := make(chan error)
@@ -23,7 +23,7 @@ func (sh *Shell) GoPipe(ctx context.Context, vars ...interface{}) (context.Conte
 }
 
 func (sh *Shell) PipeFromContext(ctx context.Context) (context.Context, context.Context, func()) {
-	a, b := context.Background(), context.Background()
+	a, b := ctx, ctx
 
 	r, w := io.Pipe()
 

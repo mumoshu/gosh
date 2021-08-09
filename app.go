@@ -57,6 +57,10 @@ func (c *App) handleFuncs(ctx context.Context, args []interface{}, outs []Output
 		// With ::: (Deprecated)
 		if c.TriggerArg == "" || (arg == c.TriggerArg && len(args) > i+1) {
 			for cmd, funWithOpts := range c.funcs {
+				if ctx.Err() != nil {
+					return nil, false, ctx.Err()
+				}
+
 				if cmd == args[i+1] {
 					for _, d := range funWithOpts.Opts.Deps {
 						_, v, err := c.handleFuncs(ctx, append([]interface{}{d.Name}, d.Args...), nil, called)
@@ -120,6 +124,11 @@ func (c *App) handleFuncs(ctx context.Context, args []interface{}, outs []Output
 		}
 
 		// fmt.Fprintf(os.Stderr, "gosh.App.handleFuncs: cmd=%s, funID=%s\n", fnName, funID)
+
+		// Handle cancellation
+		if ctx.Err() != nil {
+			return nil, true, ctx.Err()
+		}
 
 		retVals, err := funWithOpts.Fun.Call(ctx, args[1:])
 		if err != nil {
@@ -600,7 +609,7 @@ func (t *Shell) runPipeline(ctx context.Context, cmds []Command) error {
 	for i := range precedents {
 		i := i
 		var errCh <-chan error
-		ctx, errCh = t.GoPipe(ctx, precedents[i].Vars...)
+		ctx, errCh = t.Pipe(ctx, precedents[i].Vars...)
 		wg.Add(1)
 		go func() {
 			errs[i] = <-errCh

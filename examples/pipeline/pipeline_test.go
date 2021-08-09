@@ -2,6 +2,7 @@ package pipeline_test
 
 import (
 	"bytes"
+	"context"
 	"testing"
 
 	"github.com/mumoshu/gosh"
@@ -21,5 +22,23 @@ func TestPipeline(t *testing.T) {
 		}
 
 		assert.Equal(t, "footest\n", stdout.String())
+	})
+}
+
+func TestCancel(t *testing.T) {
+	gotest := pipeline.New()
+
+	goshtest.Run(t, gotest, func() {
+		var stdout bytes.Buffer
+
+		ctx, cancel := context.WithCancel(context.Background())
+		cancel()
+
+		err := gotest.Run(t, ctx, "ctx3", gosh.WriteStdout(&stdout))
+		if err == nil {
+			t.Fatal("Missing error")
+		}
+
+		assert.Equal(t, "context canceled", err.Error())
 	})
 }

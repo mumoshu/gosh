@@ -11,7 +11,7 @@ func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
 	sh.Export("ctx3", func(ctx context.Context) error {
-		b, lsErr := sh.GoPipe(ctx, "echo", "footest")
+		b, lsErr := sh.Pipe(ctx, "echo", "footest")
 
 		grepErr := sh.GoRun(b, "grep", "test", gosh.WriteStdout(context.Stdout(ctx)))
 
