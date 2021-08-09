@@ -35,7 +35,7 @@ func New() *gosh.Shell {
 			}
 			in = f
 		} else if len(file) == 0 {
-			in = ctx.Stdin()
+			in = context.Stdin(ctx)
 		} else {
 			return fmt.Errorf("unexpected length of args %d: %v", len(file), file)
 		}

@@ -125,7 +125,7 @@ func New() *gosh.Shell {
 		sh.Run(ctx, "./scripts/deploy.sh")
 	})
 
-	sh.Export("test", func(ctx gosh.Context) {
+	sh.Export("test", func(ctx context.Context) {
 
 	})
 
