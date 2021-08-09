@@ -17,6 +17,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/mumoshu/gosh/context"
+
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -36,59 +38,59 @@ type App struct {
 	funcs map[string]FunWithOpts
 }
 
-func (c *App) HandleFuncs(ctx Context, args []interface{}, outs []Output) bool {
-	return c.handleFuncs(ctx, args, outs, map[FunID]struct{}{})
+func (c *App) HandleFuncs(ctx context.Context, args []interface{}, outs []Output) (bool, error) {
+	retVals, ret, err := c.handleFuncs(ctx, args, outs, map[FunID]struct{}{})
+
+	if err != nil {
+		return ret, err
+	}
+
+	for i, o := range outs {
+		o.value.Set(retVals[i])
+	}
+
+	return ret, nil
 }
 
-func (c *App) handleFuncs(ctx Context, args []interface{}, outs []Output, called map[FunID]struct{}) bool {
+func (c *App) handleFuncs(ctx context.Context, args []interface{}, outs []Output, called map[FunID]struct{}) ([]reflect.Value, bool, error) {
 	for i, arg := range args {
 		// With ::: (Deprecated)
 		if c.TriggerArg == "" || (arg == c.TriggerArg && len(args) > i+1) {
 			for cmd, funWithOpts := range c.funcs {
 				if cmd == args[i+1] {
 					for _, d := range funWithOpts.Opts.Deps {
-						w := WrapContext(ctx)
-						v := c.HandleFuncs(w, append([]interface{}{d.Name}, d.Args...), nil)
+						_, v, err := c.handleFuncs(ctx, append([]interface{}{d.Name}, d.Args...), nil, called)
 						if !v {
-							ctx.Err(fmt.Sprintf("unable to start function %s due to dep error: %v", args[i+1], w.GetErr()))
-							return true
+							return nil, true, fmt.Errorf("unable to start function %s due to dep error: %w", args[i+1], err)
 						}
 					}
 
 					funID := NewFunID(Dependency{Name: args[i+1], Args: args[i+2:]})
 
 					if _, v := called[funID]; v {
-						// this function has been already called successfully. Se don't
+						// this function has been already called successfully. We don't
 						// need to call it twice.
-						return true
+						return nil, true, nil
 					}
 
 					// fmt.Fprintf(os.Stderr, "gosh.App.handleFuncs :::: cmd=%s, funID=%s\n", cmd, funID)
 
 					retVals, err := c.funcs[cmd].Fun.Call(ctx, args[i+2:])
 					if err != nil {
-						ctx.Err(err.Error())
-						return true
+						return nil, true, err
 					}
 
 					if len(outs) > len(retVals) {
-						ctx.Err(fmt.Sprintf("%s: missing outputs: expected %d, got %d return values", cmd, len(outs), len(retVals)))
-						return true
-					}
-
-					for i, o := range outs {
-						o.value.Set(retVals[i])
+						return nil, true, fmt.Errorf("%s: missing outputs: expected %d, got %d return values", cmd, len(outs), len(retVals))
 					}
 
 					called[NewFunID(Dependency{Name: args[i+1], Args: args[i+2:]})] = struct{}{}
 
-					return true
+					return retVals, true, nil
 				}
 			}
 
-			ctx.Err(fmt.Sprintf("function %s not found", args[i+1]))
-
-			return false
+			return nil, false, fmt.Errorf("function %s not found", args[i+1])
 		}
 	}
 
@@ -103,11 +105,9 @@ func (c *App) handleFuncs(ctx Context, args []interface{}, outs []Output, called
 	// Without :::
 	if funWithOpts, ok := c.funcs[fnName]; ok {
 		for _, d := range funWithOpts.Opts.Deps {
-			w := WrapContext(ctx)
-			v := c.HandleFuncs(w, append([]interface{}{d.Name}, d.Args...), nil)
+			_, v, err := c.handleFuncs(ctx, append([]interface{}{d.Name}, d.Args...), nil, called)
 			if !v {
-				ctx.Err(fmt.Sprintf("unable to start function %s due to dep error: %v", args[0], w.GetErr()))
-				return true
+				return nil, true, fmt.Errorf("unable to start function %s due to dep error: %w", args[0], err)
 			}
 		}
 
@@ -116,32 +116,26 @@ func (c *App) handleFuncs(ctx Context, args []interface{}, outs []Output, called
 		if _, v := called[funID]; v {
 			// this function has been already called successfully. Se don't
 			// need to call it twice.
-			return true
+			return nil, true, nil
 		}
 
 		// fmt.Fprintf(os.Stderr, "gosh.App.handleFuncs: cmd=%s, funID=%s\n", fnName, funID)
 
 		retVals, err := funWithOpts.Fun.Call(ctx, args[1:])
 		if err != nil {
-			ctx.Err(err.Error())
-			return true
+			return nil, true, err
 		}
 
 		if len(outs) > len(retVals) {
-			ctx.Err(fmt.Sprintf("%s: missing outputs: expected %d, got %d return values", args[0], len(outs), len(retVals)))
-			return true
-		}
-
-		for i, o := range outs {
-			o.value.Set(retVals[i])
+			return nil, true, fmt.Errorf("%s: missing outputs: expected %d, got %d return values", args[0], len(outs), len(retVals))
 		}
 
 		called[NewFunID(Dependency{Name: args[0], Args: args[1:]})] = struct{}{}
 
-		return true
+		return retVals, true, nil
 	}
 
-	return false
+	return nil, false, nil
 }
 
 func (c *App) printEnv(file io.Writer, interactive bool) {
@@ -234,10 +228,10 @@ func (c *App) buildEnvfile(interactive bool) (string, error) {
 	return file.Name(), nil
 }
 
-func (c *App) runInteractiveShell(ctx Context) (int, error) {
+func (c *App) runInteractiveShell(ctx context.Context) (int, error) {
 	var interactive bool
 
-	osFile, isOsFile := ctx.Stdin().(*os.File)
+	osFile, isOsFile := context.Stdin(ctx).(*os.File)
 	if isOsFile {
 		interactive = terminal.IsTerminal(int(osFile.Fd()))
 	}
@@ -245,7 +239,7 @@ func (c *App) runInteractiveShell(ctx Context) (int, error) {
 	return c.runInternal(ctx, interactive, nil, RunConfig{})
 }
 
-func (c *App) runNonInteractiveShell(ctx Context, args []string, cfg RunConfig) (int, error) {
+func (c *App) runNonInteractiveShell(ctx context.Context, args []string, cfg RunConfig) (int, error) {
 	var isCmd bool
 
 	if len(args) > 0 {
@@ -270,7 +264,7 @@ func (c *App) runNonInteractiveShell(ctx Context, args []string, cfg RunConfig) 
 	return c.runInternal(ctx, false, bashArgs, cfg)
 }
 
-func (c *App) runInternal(ctx Context, interactive bool, args []string, cfg RunConfig) (int, error) {
+func (c *App) runInternal(ctx context.Context, interactive bool, args []string, cfg RunConfig) (int, error) {
 	envfile, err := c.buildEnvfile(interactive)
 	if err != nil {
 		return 0, err
@@ -302,9 +296,9 @@ func (c *App) runInternal(ctx Context, interactive bool, args []string, cfg RunC
 	}
 	cmd.Dir = cfg.Dir
 	cmd.Env = append(cmd.Env, cfg.Env...)
-	cmd.Stdin = ctx.Stdin()
-	cmd.Stdout = ctx.Stdout()
-	cmd.Stderr = ctx.Stderr()
+	cmd.Stdin = context.Stdin(ctx)
+	cmd.Stdout = context.Stdout(ctx)
+	cmd.Stderr = context.Stderr(ctx)
 	if err := cmd.Start(); err != nil {
 		return 0, err
 	}
@@ -327,7 +321,7 @@ func (c *App) runInternal(ctx Context, interactive bool, args []string, cfg RunC
 	return exitStatus(err)
 }
 
-func (app *App) Run(ctx Context, args []interface{}, cfg RunConfig) error {
+func (app *App) Run(ctx context.Context, args []interface{}, cfg RunConfig) error {
 	outs := cfg.Outputs
 	stdout := cfg.Stdout
 	stderr := cfg.Stderr
@@ -338,41 +332,30 @@ func (app *App) Run(ctx Context, args []interface{}, cfg RunConfig) error {
 		return nil
 	}
 
+	if ctx == nil {
+		ctx = context.Background()
+		ctx = context.WithStdin(ctx, os.Stdin)
+		ctx = context.WithStdout(ctx, os.Stdout)
+		ctx = context.WithStderr(ctx, os.Stderr)
+	}
+
+	if stdout.w != nil {
+		ctx = context.WithStdout(ctx, stdout.w)
+	}
+
+	if stderr.w != nil {
+		ctx = context.WithStderr(ctx, stderr.w)
+	}
+
 	if len(args) == 0 {
 		_, err := app.runInteractiveShell(ctx)
 
 		return err
 	}
 
-	if ctx == nil {
-		c := &context{stdin: os.Stdin, stdout: os.Stdout, stderr: os.Stderr}
-
-		if stdout.w != nil {
-			c.stdout = stdout.w
-		}
-
-		if stderr.w != nil {
-			c.stderr = stderr.w
-		}
-
-		ctx = c
-	} else {
-		switch c := ctx.(type) {
-		case *context:
-			if stdout.w != nil {
-				c.stdout = stdout.w
-			}
-
-			if stderr.w != nil {
-				c.stderr = stderr.w
-			}
-		}
-	}
-
-	funExists := app.HandleFuncs(ctx, args, outs)
-
-	if err := ctx.GetErr(); err != nil {
-		fmt.Fprintf(ctx.Stderr(), "%v\n", err)
+	funExists, err := app.HandleFuncs(ctx, args, outs)
+	if err != nil {
+		fmt.Fprintf(context.Stderr(ctx), "%v\n", err)
 		return err
 	}
 
@@ -389,7 +372,7 @@ func (app *App) Run(ctx Context, args []interface{}, cfg RunConfig) error {
 		}
 	}
 
-	_, err := app.runNonInteractiveShell(ctx, shellArgs, cfg)
+	_, err = app.runNonInteractiveShell(ctx, shellArgs, cfg)
 
 	return err
 }
@@ -430,7 +413,7 @@ type Fun struct {
 	M    *reflect.Value
 }
 
-func (fn Fun) Call(ctx Context, args []interface{}) ([]reflect.Value, error) {
+func (fn Fun) Call(ctx context.Context, args []interface{}) ([]reflect.Value, error) {
 	// switch f := fn.F.(type) {
 	// case func(Context, []string):
 	// 	f(ctx, args)
@@ -605,7 +588,7 @@ func Cmd(vars ...interface{}) Command {
 	return Command{Vars: vars}
 }
 
-func (t *Shell) runPipeline(ctx Context, cmds []Command) error {
+func (t *Shell) runPipeline(ctx context.Context, cmds []Command) error {
 	precedents, final := cmds[:len(cmds)-1], cmds[len(cmds)-1]
 
 	errs := make([]error, len(cmds))
@@ -713,13 +696,13 @@ func (t *Shell) MustExec(osArgs []string) {
 
 func (t *Shell) Run(vars ...interface{}) error {
 	var args []interface{}
-	var ctx Context
+	var ctx context.Context
 	var cmds []Command
 	var testCtx *testing.T
 	var rc RunConfig
 	for _, v := range vars {
 		switch typed := v.(type) {
-		case Context:
+		case context.Context:
 			ctx = typed
 		case string:
 			args = append(args, typed)
@@ -749,21 +732,15 @@ func (t *Shell) Run(vars ...interface{}) error {
 	}
 
 	if ctx == nil {
-		c := &context{
-			stdin:  os.Stdin,
-			stdout: os.Stdout,
-			stderr: os.Stderr,
-		}
+		ctx = context.Background()
+	}
 
-		if rc.Stdout.w != nil {
-			c.stdout = rc.Stdout.w
-		}
+	if rc.Stdout.w != nil {
+		ctx = context.WithStdout(ctx, rc.Stdout.w)
+	}
 
-		if rc.Stderr.w != nil {
-			c.stderr = rc.Stderr.w
-		}
-
-		ctx = c
+	if rc.Stderr.w != nil {
+		ctx = context.WithStderr(ctx, rc.Stderr.w)
 	}
 
 	t.Diagf("Running %v", args)
@@ -871,7 +848,7 @@ func (c *App) DepStringMap(args ...interface{}) (map[string]string, error) {
 	return nil, nil
 }
 
-func (sh *Shell) GoRun(ctx Context, vars ...interface{}) <-chan error {
+func (sh *Shell) GoRun(ctx context.Context, vars ...interface{}) <-chan error {
 	err := make(chan error)
 
 	go func() {

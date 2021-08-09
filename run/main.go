@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -47,7 +48,7 @@ func New() *gosh.Shell {
 		sh.Run(ctx, "ls", "-lah")
 	})
 
-	sh.Export("ctx3", func(ctx gosh.Context) error {
+	sh.Export("ctx3", func(ctx context.Context) error {
 		b, lsErr := sh.GoPipe(ctx, "ls", "-lah")
 
 		grepErr := sh.GoRun(b, "grep", "test")

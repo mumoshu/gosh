@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/mumoshu/gosh"
+	"github.com/mumoshu/gosh/context"
 	"github.com/mumoshu/gosh/goshtest"
 	"github.com/stretchr/testify/assert"
 )
@@ -14,9 +15,9 @@ import (
 func TestAtoiBasic(t *testing.T) {
 	sh := &gosh.Shell{}
 
-	sh.Export("atoi", func(ctx gosh.Context, a string) (int, error) {
+	sh.Export("atoi", func(ctx context.Context, a string) (int, error) {
 		v, err := strconv.Atoi(a)
-		fmt.Fprintf(ctx.Stdout(), "%d\n", v)
+		fmt.Fprintf(context.Stdout(ctx), "%d\n", v)
 		return v, err
 	})
 
@@ -77,9 +78,9 @@ func TestAtoiFunc(t *testing.T) {
 	})
 }
 
-func atoi(ctx gosh.Context, a string) (int, error) {
+func atoi(ctx context.Context, a string) (int, error) {
 	v, err := strconv.Atoi(a)
-	fmt.Fprintf(ctx.Stdout(), "%d\n", v)
+	fmt.Fprintf(context.Stdout(ctx), "%d\n", v)
 	return v, err
 }
 
@@ -152,6 +153,6 @@ func TestAtoiStruct(t *testing.T) {
 type Strconv struct {
 }
 
-func (v Strconv) Atoi(ctx gosh.Context, a string) (int, error) {
+func (v Strconv) Atoi(ctx context.Context, a string) (int, error) {
 	return atoi(ctx, a)
 }

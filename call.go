@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+
+	"github.com/mumoshu/gosh/context"
 )
 
-func CallFunc(ctx Context, name string, fun interface{}, funArgs ...interface{}) ([]reflect.Value, error) {
+func CallFunc(ctx context.Context, name string, fun interface{}, funArgs ...interface{}) ([]reflect.Value, error) {
 	fv := reflect.ValueOf(fun)
 	x := reflect.TypeOf(fun)
 
@@ -37,7 +39,7 @@ func CallFunc(ctx Context, name string, fun interface{}, funArgs ...interface{})
 	return values, nil
 }
 
-func CallMethod(ctx Context, name string, m reflect.Value, funArgs ...interface{}) ([]reflect.Value, error) {
+func CallMethod(ctx context.Context, name string, m reflect.Value, funArgs ...interface{}) ([]reflect.Value, error) {
 	args, err := getArgs(ctx, name, m.Type(), funArgs)
 	if err != nil {
 		return nil, err
@@ -57,7 +59,7 @@ func CallMethod(ctx Context, name string, m reflect.Value, funArgs ...interface{
 	return values, nil
 }
 
-func getArgs(ctx Context, cmdName string, x reflect.Type, funArgs []interface{}) ([]reflect.Value, error) {
+func getArgs(ctx context.Context, cmdName string, x reflect.Type, funArgs []interface{}) ([]reflect.Value, error) {
 	numIn := x.NumIn()
 	// numOut := x.NumOut()
 
@@ -75,8 +77,7 @@ FOR:
 		inV := x.In(i)
 		in_Kind := inV.Kind() //func
 
-		var c Context = &context{}
-		reflectTypeContext := reflect.TypeOf(c)
+		reflectTypeContext := reflect.TypeOf(ctx)
 
 		// fmt.Fprintf(os.Stderr, "i=%d, type=%v, kind=%v\n", i, inV, in_Kind)
 
@@ -86,7 +87,7 @@ FOR:
 			// 	panic(fmt.Errorf("param %d is interface but not %v", i, reflectTypeContext))
 			// }
 			if !reflectTypeContext.AssignableTo(inV) {
-				panic(fmt.Errorf("param %d is interface %v but not assignable from %v", i, in_Kind, reflectTypeContext))
+				return nil, fmt.Errorf("param %d is interface %v but not assignable from %v", i, in_Kind, reflectTypeContext)
 			}
 			args[i] = reflect.ValueOf(ctx)
 		case reflect.String:

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/mumoshu/gosh"
+	"github.com/mumoshu/gosh/context"
 	"github.com/mumoshu/gosh/goshtest"
 	"github.com/stretchr/testify/assert"
 )
@@ -19,12 +20,12 @@ func TestFlags(t *testing.T) {
 		UpperCase bool `flag:"upper-case"`
 	}
 
-	sh.Export("hello", func(ctx gosh.Context, a string, opts Opts) {
+	sh.Export("hello", func(ctx context.Context, a string, opts Opts) {
 		a = "hello " + a
 		if opts.UpperCase {
 			a = strings.ToUpper(a)
 		}
-		fmt.Fprintf(ctx.Stdout(), "%s\n", a)
+		fmt.Fprintf(context.Stdout(ctx), "%s\n", a)
 	})
 
 	goshtest.Run(t, sh, func() {

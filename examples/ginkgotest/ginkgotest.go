@@ -1,12 +1,15 @@
 package ginkgotest
 
-import "github.com/mumoshu/gosh"
+import (
+	"github.com/mumoshu/gosh"
+	"github.com/mumoshu/gosh/context"
+)
 
 func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
-	sh.Export("hello", func(ctx gosh.Context, target string) {
-		ctx.Stdout().Write([]byte("hello " + target + "\n"))
+	sh.Export("hello", func(ctx context.Context, target string) {
+		context.Stdout(ctx).Write([]byte("hello " + target + "\n"))
 	})
 
 	return sh

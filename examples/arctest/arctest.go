@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/mumoshu/gosh"
+	"github.com/mumoshu/gosh/context"
 )
 
 func GetRepo() (string, error) {
@@ -100,27 +101,27 @@ func Foo(kubeconfig string) error {
 func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
-	var Echof = func(ctx gosh.Context, format string, args ...interface{}) {
-		fmt.Fprintf(ctx.Stdout(), format+"\n", args...)
+	var Echof = func(ctx context.Context, format string, args ...interface{}) {
+		fmt.Fprintf(context.Stdout(ctx), format+"\n", args...)
 	}
 
 	type Config struct {
 		Region string `flag:"region"`
 	}
 
-	sh.Export("terraform", func(ctx gosh.Context, cmd string, args []string) {
+	sh.Export("terraform", func(ctx context.Context, cmd string, args []string) {
 		Echof(ctx, "cmd=%s, args=%v", cmd, args)
 	})
 
-	sh.Export("terraform-apply", func(ctx gosh.Context, dir string) {
+	sh.Export("terraform-apply", func(ctx context.Context, dir string) {
 		sh.Run(ctx, "terraform", "apply", "-auto-approve")
 	})
 
-	sh.Export("terraform-destroy", func(ctx gosh.Context, dir string) {
+	sh.Export("terraform-destroy", func(ctx context.Context, dir string) {
 		sh.Run(ctx, "terraform", "destroy", "-auto-approve")
 	})
 
-	sh.Export("deploy", func(ctx gosh.Context) {
+	sh.Export("deploy", func(ctx context.Context) {
 		sh.Run(ctx, "./scripts/deploy.sh")
 	})
 
@@ -138,18 +139,18 @@ func New() *gosh.Shell {
 		TestID    string `flag:"test-id"`
 	}
 
-	infof := func(ctx gosh.Context, format string, args ...interface{}) {
-		fmt.Fprintf(ctx.Stderr(), format+"\n", args...)
+	infof := func(ctx context.Context, format string, args ...interface{}) {
+		fmt.Fprintf(context.Stderr(ctx), format+"\n", args...)
 	}
 
-	sh.Export("clean-e2e", func(ctx gosh.Context, opts Opts) error {
+	sh.Export("clean-e2e", func(ctx context.Context, opts Opts) error {
 		if err := sh.Run(ctx, "kind", "delete", "cluster", "--name", opts.TestID); err != nil {
 			return err
 		}
 		return nil
 	})
 
-	sh.Export("e2e", func(ctx gosh.Context, opts Opts) error {
+	sh.Export("e2e", func(ctx context.Context, opts Opts) error {
 		if err := os.MkdirAll(".e2e", 0755); err != nil {
 			return err
 		}
@@ -269,8 +270,8 @@ func New() *gosh.Shell {
 			}
 		}
 
-		ctx.Stdout().Write([]byte("hello " + "world" + "\n"))
-		ctx.Stderr().Write([]byte("hello " + "world" + " (stderr)\n"))
+		context.Stdout(ctx).Write([]byte("hello " + "world" + "\n"))
+		context.Stderr(ctx).Write([]byte("hello " + "world" + " (stderr)\n"))
 
 		sh.Run("terraform-apply", "foo")
 		defer sh.Run("terraform-destroy", "foo")
