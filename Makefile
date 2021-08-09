@@ -31,3 +31,15 @@ protoc-gen-go-gprc: .bin/protoc-gen-go-grpc
 
 .bin/protoc-gen-go-grpc:
 	GOBIN=$(abspath .bin) go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.1
+
+.PHONY: all
+all:
+	go run -tags=project ./project all
+
+.PHONY: build
+build:
+	go run -tags=project ./project build
+
+.PHONY: test
+test:
+	go run -tags=project ./project test

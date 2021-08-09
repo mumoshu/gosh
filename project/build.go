@@ -11,22 +11,36 @@ import (
 // dsl
 var (
 	sh       = &Shell{}
-	Export   = sh.Export
+	Task     = sh.Export
 	Run      = sh.Run
 	MustExec = sh.MustExec
 )
 
 func main() {
-	Export("all", Dep("build"), Dep("test"), func() {
+	Task("all", Dep("build"), Dep("test"), func() {
 
 	})
 
-	Export("build", func() {
-		Run("go", "build", "-o", "getting-started", "./examples/getting-started")
+	Task("build", func() {
+		var examples = []string{
+			"arctest",
+			"commands",
+			"getting-started",
+			"ginkgotest",
+			"gotest",
+			"pipeline",
+		}
+
+		const dir = "examples"
+
+		for _, name := range examples {
+			Run("go", "build", "-o", "bin/"+name, "./"+name, Dir(dir))
+		}
 	})
 
-	Export("test", func() {
+	Task("test", func() {
 		Run("go", "test", "./...")
+		Run("go", "test", "./...", Dir("examples"))
 	})
 
 	MustExec(os.Args)
