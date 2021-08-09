@@ -10,6 +10,7 @@ type Context = context.Context
 
 var TODO = context.TODO
 var Background = context.Background
+var WithValue = context.WithValue
 
 type stdinKey struct{}
 type stdoutKey struct{}

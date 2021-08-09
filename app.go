@@ -754,6 +754,10 @@ func (t *Shell) Run(vars ...interface{}) error {
 		ctx = context.WithStderr(ctx, rc.Stderr.w)
 	}
 
+	if testCtx != nil {
+		ctx = context.WithValue(ctx, testingTKey{}, testCtx)
+	}
+
 	t.Diagf("Running %v", args)
 
 	var initErr error

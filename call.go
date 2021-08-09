@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strconv"
+	"testing"
 
 	"github.com/mumoshu/gosh/context"
 )
@@ -25,7 +26,14 @@ func CallFunc(ctx context.Context, name string, fun interface{}, funArgs ...inte
 	// 	fmt.Printf("\nParameter OUT: "+strconv.Itoa(o)+"\nKind: %v\nName: %v\n", return_Kind, returnV.Name())
 	// }
 
+	panicked := true
+	defer func() {
+		if panicked {
+			fmt.Fprintf(context.Stderr(ctx), "Panicked while running %q with %v\n", name, args)
+		}
+	}()
 	values := fv.Call(args)
+	panicked = false
 
 	if len(values) > 0 {
 		last := values[len(values)-1]
@@ -59,6 +67,8 @@ func CallMethod(ctx context.Context, name string, m reflect.Value, funArgs ...in
 	return values, nil
 }
 
+type testingTKey struct{}
+
 func getArgs(ctx context.Context, cmdName string, x reflect.Type, funArgs []interface{}) ([]reflect.Value, error) {
 	numIn := x.NumIn()
 	// numOut := x.NumOut()
@@ -76,12 +86,25 @@ FOR:
 	for i, j := 0, 0; i < numIn; i++ {
 		inV := x.In(i)
 		in_Kind := inV.Kind() //func
+		in_typeName := inV.String()
 
 		reflectTypeContext := reflect.TypeOf(ctx)
+		reflectTypeTestingT := reflect.TypeOf(&testing.T{})
 
 		// fmt.Fprintf(os.Stderr, "i=%d, type=%v, kind=%v\n", i, inV, in_Kind)
 
 		switch in_Kind {
+		case reflect.Ptr:
+			if reflectTypeTestingT.AssignableTo(inV) {
+				v := ctx.Value(testingTKey{})
+
+				if v == nil {
+					panic("Missing *testing.T in context. Probably you tried to export a function that takes *testing.T outside of a go test?")
+				}
+				args[i] = reflect.ValueOf(v)
+			} else {
+				return nil, fmt.Errorf("parameter %v at %d is not supported", in_typeName, i)
+			}
 		case reflect.Interface:
 			// if inV != reflectTypeContext {
 			// 	panic(fmt.Errorf("param %d is interface but not %v", i, reflectTypeContext))
@@ -174,7 +197,7 @@ FOR:
 
 			break FOR
 		default:
-			panic(fmt.Sprintf("call: unexpected kind for %v: %v", inV.Name(), in_Kind))
+			panic(fmt.Sprintf("call: unsupported func parameter name=%v type=%v kind=%v while trying to match argument: %v", inV.Name(), in_typeName, in_Kind, funArgs[j]))
 		}
 	}
 

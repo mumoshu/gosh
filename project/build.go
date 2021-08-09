@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	. "github.com/mumoshu/gosh"
@@ -16,12 +17,12 @@ var (
 	MustExec = sh.MustExec
 )
 
-func main() {
+func init() {
 	Task("all", Dep("build"), Dep("test"), func() {
 
 	})
 
-	Task("build", func() {
+	Task("build", func(ctx context.Context) {
 		var examples = []string{
 			"arctest",
 			"commands",
@@ -34,7 +35,7 @@ func main() {
 		const dir = "examples"
 
 		for _, name := range examples {
-			Run("go", "build", "-o", "bin/"+name, "./"+name, Dir(dir))
+			Run(ctx, "go", "build", "-o", "bin/"+name, "./"+name, Dir(dir))
 		}
 	})
 
@@ -42,6 +43,8 @@ func main() {
 		Run("go", "test", "./...")
 		Run("go", "test", "./...", Dir("examples"))
 	})
+}
 
+func main() {
 	MustExec(os.Args)
 }
