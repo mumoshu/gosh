@@ -3,6 +3,9 @@ package gosh_test
 import (
 	"bytes"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"testing"
 
@@ -155,4 +158,118 @@ type Strconv struct {
 
 func (v Strconv) Atoi(ctx context.Context, a string) (int, error) {
 	return atoi(ctx, a)
+}
+
+func TestInputRedirectionFromFile(t *testing.T) {
+	sh := &gosh.Shell{}
+
+	sh.Export("run", func(ctx context.Context) error {
+		data, err := io.ReadAll(context.Stdin(ctx))
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintf(context.Stdout(ctx), "%s", string(data))
+		return err
+	})
+
+	goshtest.Run(t, sh, func() {
+		t.Run("ok", func(t *testing.T) {
+			var stdout bytes.Buffer
+
+			f, err := ioutil.TempFile(t.TempDir(), "input")
+			assert.NoError(t, err)
+
+			f.Close()
+
+			err = os.WriteFile(f.Name(), []byte("hello\n"), 0644)
+			assert.NoError(t, err)
+
+			f, err = os.Open(f.Name())
+			assert.NoError(t, err)
+
+			err = sh.Run(t, context.WithStdin(context.Background(), f), "run", gosh.WriteStdout(&stdout))
+			defer f.Close()
+
+			assert.NoError(t, err)
+
+			assert.Equal(t, "hello\n", stdout.String())
+		})
+	})
+}
+
+func TestStdoutRedirectionToFile(t *testing.T) {
+	sh := &gosh.Shell{}
+
+	sh.Export("run", func(ctx context.Context) error {
+		data, err := io.ReadAll(context.Stdin(ctx))
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintf(context.Stdout(ctx), "%s", string(data))
+		return err
+	})
+
+	goshtest.Run(t, sh, func() {
+		t.Run("ok", func(t *testing.T) {
+			f, err := ioutil.TempFile(t.TempDir(), "output")
+			assert.NoError(t, err)
+			f.Close()
+
+			f, err = os.Create(f.Name())
+			assert.NoError(t, err)
+
+			err = sh.Run(t, context.WithStdin(context.Background(), bytes.NewBufferString("hello\n")), "run", gosh.WriteStdout(f))
+			f.Close()
+
+			assert.NoError(t, err)
+
+			f, err = os.Open(f.Name())
+			assert.NoError(t, err)
+
+			data, err := io.ReadAll(f)
+			assert.NoError(t, err)
+
+			assert.Equal(t, "hello\n", string(data))
+		})
+	})
+}
+
+func TestStderrRedirectionToFile(t *testing.T) {
+	sh := &gosh.Shell{}
+
+	sh.Export("run", func(ctx context.Context) error {
+		data, err := io.ReadAll(context.Stdin(ctx))
+		if err != nil {
+			return err
+		}
+
+		fmt.Fprintf(context.Stderr(ctx), "%s", string(data))
+		return err
+	})
+
+	goshtest.Run(t, sh, func() {
+		t.Run("ok", func(t *testing.T) {
+			f, err := ioutil.TempFile(t.TempDir(), "output")
+			assert.NoError(t, err)
+			f.Close()
+
+			f, err = os.Create(f.Name())
+			assert.NoError(t, err)
+
+			err = sh.Run(t, context.WithStdin(context.Background(), bytes.NewBufferString("hello\n")), "run", gosh.WriteStderr(f))
+			f.Close()
+
+			assert.NoError(t, err)
+
+			f, err = os.Open(f.Name())
+			assert.NoError(t, err)
+
+			data, err := io.ReadAll(f)
+			assert.NoError(t, err)
+
+			assert.Equal(t, "hello\n", string(data))
+		})
+	})
 }
