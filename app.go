@@ -298,7 +298,7 @@ func (c *App) runInternal(ctx context.Context, interactive bool, args []string, 
 
 	// println(fmt.Sprintf("App.run: running %v: bashArgs %v (%d)", args, bashArgs, len(bashArgs)))
 
-	cmd := exec.Command(c.BashPath, bashArgs...)
+	cmd := exec.CommandContext(ctx, c.BashPath, bashArgs...)
 	cmd.Env = os.Environ()
 	if !interactive {
 		cmd.Env = append(cmd.Env, "BASH_ENV="+envfile)
