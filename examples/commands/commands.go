@@ -8,13 +8,14 @@ import (
 	"strings"
 
 	"github.com/mumoshu/gosh"
+	"github.com/mumoshu/gosh/context"
 )
 
 func New() *gosh.Shell {
 	sh := &gosh.Shell{}
 
-	sh.Export("gogrep", func(ctx gosh.Context, pattern string) {
-		scanner := bufio.NewScanner(ctx.Stdin())
+	sh.Export("gogrep", func(ctx context.Context, pattern string) {
+		scanner := bufio.NewScanner(context.Stdin(ctx))
 
 		for scanner.Scan() {
 			line := scanner.Text()
@@ -24,7 +25,7 @@ func New() *gosh.Shell {
 		}
 	})
 
-	sh.Export("gocat", func(ctx gosh.Context, file ...string) error {
+	sh.Export("gocat", func(ctx context.Context, file ...string) error {
 		var in io.Reader
 
 		if len(file) == 1 {

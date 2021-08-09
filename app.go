@@ -347,6 +347,8 @@ func (app *App) Run(ctx context.Context, args []interface{}, cfg RunConfig) erro
 		ctx = context.WithStderr(ctx, stderr.w)
 	}
 
+	ctx = context.WithVariables(ctx, map[string]interface{}{})
+
 	if len(args) == 0 {
 		_, err := app.runInteractiveShell(ctx)
 
