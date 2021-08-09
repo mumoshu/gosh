@@ -83,7 +83,7 @@ func Run(testCtx *testing.T, t *gosh.Shell, f func()) {
 	f()
 }
 
-// Cleanup is similar to t.Cleanup(), but it only runs the cleanup function only when the whole test has succeded.
+// Cleanup is similar to t.Cleanup(), but it runs the cleanup function only when the whole test has succeded.
 // If the test as a whole failed, or go-test binary was instructed to run a specific subtest, the cleanup function isn't called,
 // so that you can iterate quicker.
 func Cleanup(t *testing.T, f func()) {
